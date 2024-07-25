@@ -5,7 +5,7 @@
 #define SET_BIT(REG, BIT) (REG |= (1 << BIT))
 #define UNSET_BIT(REG, BIT) (REG &= ~(1 << BIT))
 
-#define RHYTHM_UNIT 48
+#define RHYTHM_UNIT 54
 #define RHYTHM_DELAY _delay_ms(RHYTHM_UNIT);
 
 #define  C3 255
@@ -142,114 +142,100 @@ static void playChordFluid(unsigned char tone,  unsigned char pitch1,  unsigned 
 int main(void)
 {
     TCCR0A = (1 << COM0A1) | (1 << COM0B1) | (1 << WGM00) | (1 << WGM01);
-    TCCR0B= (1 << CS02) | (1 << WGM02); 
+    TCCR0B= (1 << CS00) | (1 << CS02) | (1 << WGM02); 
 
     SET_BIT(DDRD, DDD5);
     SET_BIT(DDRB, DDB5);
 
     SET_BIT(PORTB, 5);
 
-    // opening sfx
-    playNoteFluid(4, C3, 14, 2, 1, -4);
-
-    // lost elf b section
-    for (int i = 0; i < 2; i++)
-    {
-        playChordFluid(2, C3, F3, Ab3, C4,   12, 0, 1, 0);
-        playChordFluid(16, D3, G3, Bb3, D4,   4, 0, -1, 0);
-    }
-
-    playChordFluid(2, Eb3, Ab3, C4, Eb4, 12, 0, 1, 0);
-    playChordFluid(16, D3, G3, Bb3, D4,   4, 0, -1, 0);
-    playChordFluid(4, C3, F3, Ab3, C4,   8, 0, 1, 0);
-    playChordFluid(16, C3, F3, Ab3, C4,   8, 0, -1, 0);
-
-    playChordFluid(2, F3, C4, F4, Ab4,   12, 0, 1, 0);
-    playChordFluid(16, F3, Ab3, C4, F4,   4, 0, 1, 0);
-    playChordFluid(2, G3, D4, G4, Bb4,   12, 0, 1, 0);
-    playChordFluid(16, Ab3, C4, Eb4, Ab4,   4, 0, -1, 0);
-    playChordFluid(8, Ab3, C4, Eb4, C5, 4, 0, 0, 0);
-    playChordFluid(8, Ab3, C4, Eb4, Db5, 4, 0, 0, 0);
-    playChordFluid(8, G3, Bb3, D4, Bb4, 6, 0, -1, 0);
-    playChordFluid(2, G3, Bb3, D4, Ab4, 2, 0, 1, 0);
-    playChordFluid(4, C3, F3, Ab3, C5,   16, 0, 1, 0);
-
-    playChordFluid(2, Eb3, Ab3, B3, Eb4,   12, 0, 1, 0);
-    playChordFluid(16,Eb3, Bb3, Db4, F4,   4, 0, -1, 0);
-    playChordFluid(2, Eb3, Ab3, B3, Eb4,   12, 0, 1, 0);
-    playChordFluid(16,Eb3, Bb3, Db4, F4,   4, 0, -1, 0);
-    playChordFluid(2, Gb3, B3, Eb4, Gb4, 12, 0, 1, 0);
-    playChordFluid(16,Gb3, B3, Eb4, Ab4,   4, 0, -1, 0);
-    playChordFluid(4, D3, F3, Bb3, Eb4,   8, 0, 1, 0);
-    playChordFluid(16,D3, F3, Bb3, D4,   8, 0, -1, 0);
-
-    playChordFluid(2, Eb3, Ab3, B3, Eb4,   12, 0, 1, 0);
-    playNoteFluid(2, Ab3, 4, 0, 1, 0);
-    playNoteFluid(2, B3, 4, 0, 1, 0);
-    playNoteFluid(2, Eb3, 2, 2, 1, 1);
-    playChordFluid(4, Db3, Ab3, Db4, Gb4, 4, 0, 2, 0);
-    playChordFluid(16, Db3, Ab3, Db4, F4,  4, 0, -2, 0);
-    playNoteFluid(4, Db4, 16, 0, 0, 0);
-    playNoteFluid(16, Bb3, 16, 0, 0 ,0);
-    playChordFluid(4, Eb3, Gb3, Bb3, Eb4,  16, 0, 4, 0);
-    playChordFluid(48, Eb3, Gb3, Bb3, Eb4,  32, 0, 0, 0);
-
-    // cybat intro
-
-    for (int i = 0; i < 2; i++)
-    {
-        playNoteFluid(50, C3, 3, 9,  -2, -5);
-        playNoteFluid(50, C3, 3, 1,  -2, -5);
-        playNoteFluid(50, C3, 3, 5,  -2, -5);
-        playNoteFluid(50, C3, 3, 9,  -2, -5);
-        playNoteFluid(50, C3, 3, 1,  -2, -5);
-        playNoteFluid(50, C3, 3, 5,  -2, -5);
-        playNoteFluid(50, C3, 3, 13, -2, -5);
-    }
-
     for(;;)
     {
 
-        // cybat
-        playNote(4, A3, 6, 2);
-        playNote(2, B3, 4, 0);
-        playNoteFluid(3, Ab3, 4, 8, 8, 0);
-        playNote(2, Ab3-2, 4, 4);
-        playNote(2, G3, 2, 2);
-        playNote(3, G3, 2, 2);
-        playNote(4, G3, 6, 2);
-        playNote(3, Gb3, 8, 0);
-        playNoteFluid(2, Gb3, 8, 0, 0, -4);
+        playNote(0, Gb5, 2, 2);
 
-        playNote(4, G3, 6, 2);
-        playNote(2, A3, 4, 0);
-        playNoteFluid(3, Gb3, 4, 8, 8, 0);
-        playNote(2, Gb3-2, 4, 4);
-        playNote(2, F3, 2, 2);
-        playNote(3, F3, 2, 2);
-        playNote(4, F3, 6, 2);
-        playNote(3, E3, 8, 0);
-        playNoteFluid(2, E3, 8, 0, 0, 8);
+        playNote(3, B4, 4, 0);
+        playNote(2, D5, 3, 1);
+        playNote(1, Gb5, 4, 0);
+        playNote(0, B5, 3, 1);
 
-        playNote(4, A4, 6, 2);
-        playNote(2, B4, 4, 0);
-        playNoteFluid(3, Ab4, 4, 8, 8, 0);
-        playNote(2, Ab4-2, 4, 4);
-        playNote(2, G4, 2, 2);
-        playNote(3, G4, 2, 2);
-        playNote(4, G4, 6, 2);
-        playNote(3, Gb4, 8, 0);
-        playNoteFluid(2, Gb4, 8, 0, 0, -4);
+        playNote(3, G5, 4, 0);
+        playNote(2, E5, 3, 1);
+        playNote(1, Db5, 4, 0);
+        playNote(0, E5, 3, 1);
 
-        playNote(4, G4, 6, 2);
-        playNote(2, A4, 4, 0);
-        playNoteFluid(3, Gb4, 4, 8, 8, 0);
-        playNote(2, Gb4-2, 4, 4);
-        playNote(2, F4, 2, 2);
-        playNote(3, F4, 2, 2);
-        playNote(4, F4, 6, 2);
-        playNote(3, E4, 4, 0);
-        playNoteFluid(2, E4, 12, 0, 0, 4);
+        playNote(3, Bb4, 4, 0);
+        playNote(2, G5, 3, 1);
+        playNote(1, Gb5, 4, 0);
+        playNote(0, E5, 3, 1);
+                  
+        playNote(3, D5, 4, 0);
+        playNote(2, B4, 3, 1);
+        playNote(1, Gb4, 4, 0);
+        playNote(0, A4, 3, 1);
+
+        playNote(3, G4, 4, 0);
+        playNote(2, Gb5, 3, 1);
+        playNote(1, E5, 4, 0);
+        playNote(0, D5, 3, 1);
+                  
+        playNote(3, Db5, 4, 0);
+        playNote(2, E5, 3, 1);
+        playNote(1, G5, 4, 0);
+        playNote(0, B4, 3, 1);
+
+        playNote(3, Gb4, 4, 0);
+        playNote(2, Db5, 3, 1);
+        playNote(1, Gb4, 4, 0);
+        playNote(0, E4, 3, 1);
+                  
+        playNote(3, D4, 3, 1);
+        playNote(2, B4, 3, 1);
+        playNote(1, Db4, 3, 1);
+        playNote(0, Db5, 3, 1);
+
+        //line 2
+
+        playNote(3, D5, 4, 0);
+        playNote(2, Gb4, 3, 1);
+        playNote(1, B3, 4, 0);
+        playNote(0, Db4, 3, 1);
+                  
+        playNote(3, D4, 4, 0);
+        playNote(2, E4, 3, 1);
+        playNote(1, Gb4, 4, 0);
+        playNote(0, G4, 3, 1);
+
+        playNote(3, A4, 4, 0);
+        playNote(2, D4, 3, 1);
+        playNote(1, Gb4, 4, 0);
+        playNote(0, A4, 3, 1);
+                  
+        playNote(3, D5, 4, 0);
+        playNote(2, E5, 3, 1);
+        playNote(1, Gb5, 4, 0);
+        playNote(0, A4, 3, 1);
+
+        playNote(3, B4, 4, 0);
+        playNote(2, G4, 3, 1);
+        playNote(1, B4, 4, 0);
+        playNote(0, D5, 3, 1);
+                  
+        playNote(3, G5, 4, 0);
+        playNote(2, B4, 3, 1);
+        playNote(1, G4, 4, 0);
+        playNote(0, E4, 3, 1);
+
+        playNote(3, Db4, 4, 0);
+        playNote(2, E4, 3, 1);
+        playNote(1, A4, 4, 0);
+        playNote(0, G5, 3, 1);
+                  
+        playNote(3, Gb5, 4, 0);
+        playNote(2, D4, 3, 1);
+        playNote(1, G4, 4, 0);
+        playNote(0, E5, 3, 1);
+
     }
 }
 
