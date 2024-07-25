@@ -46,79 +46,98 @@
 #define  B5 34
 #define  C6 31
 
-#define PLAY_NOTE(tone, pitch, duration, gap) {\
-    OCR0B = tone;\
-    OCR0A = pitch;\
-    SET_BIT(PORTB, 5);\
-    for (int i = 0; i < duration; i++)\
-        RHYTHM_DELAY\
-    UNSET_BIT(PORTB, 5);\
-    for (int i = 0; i < gap; i++)\
-        RHYTHM_DELAY\
+static void playNote(unsigned char tone, unsigned char pitch, unsigned char duration, unsigned char gap)
+{
+    OCR0B = tone;
+    OCR0A = pitch;
+    SET_BIT(PORTB, 5);
+    for (int i = 0; i < duration; i++)
+    {
+        RHYTHM_DELAY
+    }
+    UNSET_BIT(PORTB, 5);
+    for (int i = 0; i < gap; i++)
+    {
+        RHYTHM_DELAY
+    }
 }
 
-#define PLAY_NOTE_FLUID(tone, pitch, duration, gap, toneDir, pitchDir) {\
-    OCR0B = tone;\
-    OCR0A = pitch;\
-    SET_BIT(PORTB, 5);\
-    for (int i = 0; i < duration; i++)\
-    {\
-        RHYTHM_DELAY\
-        OCR0B = tone + (toneDir*i);\
-        OCR0A = pitch + (pitchDir*i);\
-    }\
-    UNSET_BIT(PORTB, 5);\
-    for (int i = 0; i < gap; i++)\
-        RHYTHM_DELAY\
+static void playNoteFluid(unsigned char tone, unsigned char pitch, unsigned char duration, unsigned char gap, char toneDir, char pitchDir)
+{
+    OCR0B = tone;
+    OCR0A = pitch;
+    SET_BIT(PORTB, 5);
+    for (int i = 0; i < duration; i++)
+    {
+        RHYTHM_DELAY
+        OCR0B = tone + (toneDir*i);
+        OCR0A = pitch + (pitchDir*i);
+    }
+    UNSET_BIT(PORTB, 5);
+    for (int i = 0; i < gap; i++)
+    {
+        RHYTHM_DELAY
+    }
 }
 
-#define PLAY_CHORD(tone, pitch1, pitch2, pitch3, pitch4, duration, gap) {\
-    OCR0B = tone;\
-    OCR0A = pitch1;\
-    SET_BIT(PORTB, 5);\
-    for (int i = 0; i < duration; i++)\
-    {\
-        OCR0A = pitch1;\
-        RHYTHM_DELAY\
-        OCR0A = pitch2;\
-        RHYTHM_DELAY\
-        OCR0A = pitch3;\
-        RHYTHM_DELAY\
-        OCR0A = pitch4;\
-        RHYTHM_DELAY\
-    }\
-    UNSET_BIT(PORTB, 5);\
-    for (int i = 0; i < gap; i++)\
-    {\
-        RHYTHM_DELAY\
-        RHYTHM_DELAY\
-        RHYTHM_DELAY\
-        RHYTHM_DELAY\
-    }\
+static void playChord(unsigned char tone,  unsigned char pitch1,  unsigned char pitch2,  unsigned char pitch3, unsigned char pitch4, unsigned char duration, unsigned char gap)
+{
+    OCR0B = tone;
+    OCR0A = pitch1;
+    SET_BIT(PORTB, 5);
+
+    for (int i = 0; i < duration; i++)
+    {
+        OCR0A = pitch1;
+        RHYTHM_DELAY
+        OCR0A = pitch2;
+        RHYTHM_DELAY
+        OCR0A = pitch3;
+        RHYTHM_DELAY
+        OCR0A = pitch4;
+        RHYTHM_DELAY
+    }
+
+    UNSET_BIT(PORTB, 5);
+
+    for (int i = 0; i < gap; i++)
+    {
+        RHYTHM_DELAY
+        RHYTHM_DELAY
+        RHYTHM_DELAY
+        RHYTHM_DELAY
+    }
 }
 
-#define PLAY_CHORD_FLUID(tone, pitch1, pitch2, pitch3, pitch4, duration, gap, toneDir, pitchDir) {\
-    unsigned char pitchMod = 0;\
-    OCR0B = tone;\
-    OCR0A = pitch1;\
-    SET_BIT(PORTB, 5);\
-    for (int i = 0; i < duration; i++)\
-    {\
-        OCR0A = pitch1+pitchMod;\
-        RHYTHM_DELAY\
-        OCR0A = pitch2+pitchMod;\
-        RHYTHM_DELAY\
-        OCR0A = pitch3+pitchMod;\
-        RHYTHM_DELAY\
-        OCR0A = pitch4+pitchMod;\
-        RHYTHM_DELAY\
-        OCR0B = tone+(toneDir*i);\
-        pitchMod += pitchDir*i;\
-    }\
-    UNSET_BIT(PORTB, 5);\
-    for (int i = 0; i < gap; i++)\
-        RHYTHM_DELAY\
+static void playChordFluid(unsigned char tone,  unsigned char pitch1,  unsigned char pitch2,  unsigned char pitch3, unsigned char pitch4, unsigned char duration, unsigned char gap, char toneDir, char pitchDir)
+{
+    unsigned char pitchMod = 0;
+    OCR0B = tone;
+    OCR0A = pitch1;
+    SET_BIT(PORTB, 5);
+
+    for (int i = 0; i < duration; i++)
+    {
+        OCR0A = pitch1+pitchMod;
+        RHYTHM_DELAY
+        OCR0A = pitch2+pitchMod;
+        RHYTHM_DELAY
+        OCR0A = pitch3+pitchMod;
+        RHYTHM_DELAY
+        OCR0A = pitch4+pitchMod;
+        RHYTHM_DELAY
+        OCR0B = tone+(toneDir*i);
+        pitchMod += pitchDir*i;
+    }
+
+    UNSET_BIT(PORTB, 5);
+
+    for (int i = 0; i < gap; i++)
+    {
+        RHYTHM_DELAY
+    }
 }
+
 
 int main(void)
 {
@@ -131,105 +150,106 @@ int main(void)
     SET_BIT(PORTB, 5);
 
     // opening sfx
-    PLAY_NOTE_FLUID(4, C3, 14, 2, 1, -4);
+    playNoteFluid(4, C3, 14, 2, 1, -4);
 
     // lost elf b section
     for (int i = 0; i < 2; i++)
     {
-        PLAY_CHORD_FLUID(2, C3, F3, Ab3, C4,   12, 0, 1, 0);
-        PLAY_CHORD_FLUID(16, D3, G3, Bb3, D4,   4, 0, -1, 0);
+        playChordFluid(2, C3, F3, Ab3, C4,   12, 0, 1, 0);
+        playChordFluid(16, D3, G3, Bb3, D4,   4, 0, -1, 0);
     }
 
-    PLAY_CHORD_FLUID(2, Eb3, Ab3, C4, Eb4, 12, 0, 1, 0);
-    PLAY_CHORD_FLUID(16, D3, G3, Bb3, D4,   4, 0, -1, 0);
-    PLAY_CHORD_FLUID(4, C3, F3, Ab3, C4,   8, 0, 1, 0);
-    PLAY_CHORD_FLUID(16, C3, F3, Ab3, C4,   8, 0, -1, 0);
+    playChordFluid(2, Eb3, Ab3, C4, Eb4, 12, 0, 1, 0);
+    playChordFluid(16, D3, G3, Bb3, D4,   4, 0, -1, 0);
+    playChordFluid(4, C3, F3, Ab3, C4,   8, 0, 1, 0);
+    playChordFluid(16, C3, F3, Ab3, C4,   8, 0, -1, 0);
 
-    PLAY_CHORD_FLUID(2, F3, C4, F4, Ab4,   12, 0, 1, 0);
-    PLAY_CHORD_FLUID(16, F3, Ab3, C4, F4,   4, 0, 1, 0);
-    PLAY_CHORD_FLUID(2, G3, D4, G4, Bb4,   12, 0, 1, 0);
-    PLAY_CHORD_FLUID(16, Ab3, C4, Eb4, Ab4,   4, 0, -1, 0);
-    PLAY_CHORD_FLUID(8, Ab3, C4, Eb4, C5, 4, 0, 0, 0);
-    PLAY_CHORD_FLUID(8, Ab3, C4, Eb4, Db5, 4, 0, 0, 0);
-    PLAY_CHORD_FLUID(8, G3, Bb3, D4, Bb4, 6, 0, -1, 0);
-    PLAY_CHORD_FLUID(2, G3, Bb3, D4, Ab4, 2, 0, 1, 0);
-    PLAY_CHORD_FLUID(4, C3, F3, Ab3, C5,   16, 0, 1, 0);
+    playChordFluid(2, F3, C4, F4, Ab4,   12, 0, 1, 0);
+    playChordFluid(16, F3, Ab3, C4, F4,   4, 0, 1, 0);
+    playChordFluid(2, G3, D4, G4, Bb4,   12, 0, 1, 0);
+    playChordFluid(16, Ab3, C4, Eb4, Ab4,   4, 0, -1, 0);
+    playChordFluid(8, Ab3, C4, Eb4, C5, 4, 0, 0, 0);
+    playChordFluid(8, Ab3, C4, Eb4, Db5, 4, 0, 0, 0);
+    playChordFluid(8, G3, Bb3, D4, Bb4, 6, 0, -1, 0);
+    playChordFluid(2, G3, Bb3, D4, Ab4, 2, 0, 1, 0);
+    playChordFluid(4, C3, F3, Ab3, C5,   16, 0, 1, 0);
 
-    PLAY_CHORD_FLUID(2, Eb3, Ab3, B3, Eb4,   12, 0, 1, 0);
-    PLAY_CHORD_FLUID(16,Eb3, Bb3, Db4, F4,   4, 0, -1, 0);
-    PLAY_CHORD_FLUID(2, Eb3, Ab3, B3, Eb4,   12, 0, 1, 0);
-    PLAY_CHORD_FLUID(16,Eb3, Bb3, Db4, F4,   4, 0, -1, 0);
-    PLAY_CHORD_FLUID(2, Gb3, B3, Eb4, Gb4, 12, 0, 1, 0);
-    PLAY_CHORD_FLUID(16,Gb3, B3, Eb4, Ab4,   4, 0, -1, 0);
-    PLAY_CHORD_FLUID(4, D3, F3, Bb3, Eb4,   8, 0, 1, 0);
-    PLAY_CHORD_FLUID(16,D3, F3, Bb3, D4,   8, 0, -1, 0);
+    playChordFluid(2, Eb3, Ab3, B3, Eb4,   12, 0, 1, 0);
+    playChordFluid(16,Eb3, Bb3, Db4, F4,   4, 0, -1, 0);
+    playChordFluid(2, Eb3, Ab3, B3, Eb4,   12, 0, 1, 0);
+    playChordFluid(16,Eb3, Bb3, Db4, F4,   4, 0, -1, 0);
+    playChordFluid(2, Gb3, B3, Eb4, Gb4, 12, 0, 1, 0);
+    playChordFluid(16,Gb3, B3, Eb4, Ab4,   4, 0, -1, 0);
+    playChordFluid(4, D3, F3, Bb3, Eb4,   8, 0, 1, 0);
+    playChordFluid(16,D3, F3, Bb3, D4,   8, 0, -1, 0);
 
-    PLAY_CHORD_FLUID(2, Eb3, Ab3, B3, Eb4,   12, 0, 1, 0);
-    PLAY_NOTE_FLUID(2, Ab3, 4, 0, 1, 0);
-    PLAY_NOTE_FLUID(2, B3, 4, 0, 1, 0);
-    PLAY_NOTE_FLUID(2, Eb3, 2, 2, 1, 1);
-    PLAY_CHORD_FLUID(4, Db3, Ab3, Db4, Gb4, 4, 0, 2, 0);
-    PLAY_CHORD_FLUID(16, Db3, Ab3, Db4, F4,  4, 0, -2, 0);
-    PLAY_NOTE_FLUID(4, Db4, 16, 0, 0, 0);
-    PLAY_NOTE_FLUID(16, Bb3, 16, 0, 0 ,0);
-    PLAY_CHORD_FLUID(4, Eb3, Gb3, Bb3, Eb4,  16, 0, 4, 0);
-    PLAY_CHORD_FLUID(48, Eb3, Gb3, Bb3, Eb4,  32, 0, 0, 0);
+    playChordFluid(2, Eb3, Ab3, B3, Eb4,   12, 0, 1, 0);
+    playNoteFluid(2, Ab3, 4, 0, 1, 0);
+    playNoteFluid(2, B3, 4, 0, 1, 0);
+    playNoteFluid(2, Eb3, 2, 2, 1, 1);
+    playChordFluid(4, Db3, Ab3, Db4, Gb4, 4, 0, 2, 0);
+    playChordFluid(16, Db3, Ab3, Db4, F4,  4, 0, -2, 0);
+    playNoteFluid(4, Db4, 16, 0, 0, 0);
+    playNoteFluid(16, Bb3, 16, 0, 0 ,0);
+    playChordFluid(4, Eb3, Gb3, Bb3, Eb4,  16, 0, 4, 0);
+    playChordFluid(48, Eb3, Gb3, Bb3, Eb4,  32, 0, 0, 0);
 
     // cybat intro
 
     for (int i = 0; i < 2; i++)
     {
-        PLAY_NOTE_FLUID(50, C3, 3, 9,  -2, -5);
-        PLAY_NOTE_FLUID(50, C3, 3, 1,  -2, -5);
-        PLAY_NOTE_FLUID(50, C3, 3, 5,  -2, -5);
-        PLAY_NOTE_FLUID(50, C3, 3, 9,  -2, -5);
-        PLAY_NOTE_FLUID(50, C3, 3, 1,  -2, -5);
-        PLAY_NOTE_FLUID(50, C3, 3, 5,  -2, -5);
-        PLAY_NOTE_FLUID(50, C3, 3, 13, -2, -5);
+        playNoteFluid(50, C3, 3, 9,  -2, -5);
+        playNoteFluid(50, C3, 3, 1,  -2, -5);
+        playNoteFluid(50, C3, 3, 5,  -2, -5);
+        playNoteFluid(50, C3, 3, 9,  -2, -5);
+        playNoteFluid(50, C3, 3, 1,  -2, -5);
+        playNoteFluid(50, C3, 3, 5,  -2, -5);
+        playNoteFluid(50, C3, 3, 13, -2, -5);
     }
 
     for(;;)
     {
 
         // cybat
-        PLAY_NOTE(4, A3, 6, 2);
-        PLAY_NOTE(2, B3, 4, 0);
-        PLAY_NOTE_FLUID(3, Ab3, 4, 8, 8, 0);
-        PLAY_NOTE(2, Ab3-2, 4, 4);
-        PLAY_NOTE(2, G3, 2, 2);
-        PLAY_NOTE(3, G3, 2, 2);
-        PLAY_NOTE(4, G3, 6, 2);
-        PLAY_NOTE(3, Gb3, 8, 0);
-        PLAY_NOTE_FLUID(2, Gb3, 8, 0, 0, -4);
+        playNote(4, A3, 6, 2);
+        playNote(2, B3, 4, 0);
+        playNoteFluid(3, Ab3, 4, 8, 8, 0);
+        playNote(2, Ab3-2, 4, 4);
+        playNote(2, G3, 2, 2);
+        playNote(3, G3, 2, 2);
+        playNote(4, G3, 6, 2);
+        playNote(3, Gb3, 8, 0);
+        playNoteFluid(2, Gb3, 8, 0, 0, -4);
 
-        PLAY_NOTE(4, G3, 6, 2);
-        PLAY_NOTE(2, A3, 4, 0);
-        PLAY_NOTE_FLUID(3, Gb3, 4, 8, 8, 0);
-        PLAY_NOTE(2, Gb3-2, 4, 4);
-        PLAY_NOTE(2, F3, 2, 2);
-        PLAY_NOTE(3, F3, 2, 2);
-        PLAY_NOTE(4, F3, 6, 2);
-        PLAY_NOTE(3, E3, 8, 0);
-        PLAY_NOTE_FLUID(2, E3, 8, 0, 0, 8);
+        playNote(4, G3, 6, 2);
+        playNote(2, A3, 4, 0);
+        playNoteFluid(3, Gb3, 4, 8, 8, 0);
+        playNote(2, Gb3-2, 4, 4);
+        playNote(2, F3, 2, 2);
+        playNote(3, F3, 2, 2);
+        playNote(4, F3, 6, 2);
+        playNote(3, E3, 8, 0);
+        playNoteFluid(2, E3, 8, 0, 0, 8);
 
-        PLAY_NOTE(4, A4, 6, 2);
-        PLAY_NOTE(2, B4, 4, 0);
-        PLAY_NOTE_FLUID(3, Ab4, 4, 8, 8, 0);
-        PLAY_NOTE(2, Ab4-2, 4, 4);
-        PLAY_NOTE(2, G4, 2, 2);
-        PLAY_NOTE(3, G4, 2, 2);
-        PLAY_NOTE(4, G4, 6, 2);
-        PLAY_NOTE(3, Gb4, 8, 0);
-        PLAY_NOTE_FLUID(2, Gb4, 8, 0, 0, -4);
+        playNote(4, A4, 6, 2);
+        playNote(2, B4, 4, 0);
+        playNoteFluid(3, Ab4, 4, 8, 8, 0);
+        playNote(2, Ab4-2, 4, 4);
+        playNote(2, G4, 2, 2);
+        playNote(3, G4, 2, 2);
+        playNote(4, G4, 6, 2);
+        playNote(3, Gb4, 8, 0);
+        playNoteFluid(2, Gb4, 8, 0, 0, -4);
 
-        PLAY_NOTE(4, G4, 6, 2);
-        PLAY_NOTE(2, A4, 4, 0);
-        PLAY_NOTE_FLUID(3, Gb4, 4, 8, 8, 0);
-        PLAY_NOTE(2, Gb4-2, 4, 4);
-        PLAY_NOTE(2, F4, 2, 2);
-        PLAY_NOTE(3, F4, 2, 2);
-        PLAY_NOTE(4, F4, 6, 2);
-        PLAY_NOTE(3, E4, 4, 0);
-        PLAY_NOTE_FLUID(2, E4, 12, 0, 0, 4);
+        playNote(4, G4, 6, 2);
+        playNote(2, A4, 4, 0);
+        playNoteFluid(3, Gb4, 4, 8, 8, 0);
+        playNote(2, Gb4-2, 4, 4);
+        playNote(2, F4, 2, 2);
+        playNote(3, F4, 2, 2);
+        playNote(4, F4, 6, 2);
+        playNote(3, E4, 4, 0);
+        playNoteFluid(2, E4, 12, 0, 0, 4);
     }
 }
+
