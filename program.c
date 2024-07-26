@@ -101,6 +101,7 @@ static void playChord(unsigned char tone,  unsigned char pitch1,  unsigned char 
 static void playChordFluid(unsigned char tone,  unsigned char pitch1,  unsigned char pitch2,  unsigned char pitch3, unsigned char pitch4, unsigned char duration, unsigned char gap, char toneDir, char pitchDir)
 {
     unsigned char pitchMod = 0;
+    unsigned char toneMod = 0;
     OCR0B = tone;
     OCR0A = pitch1;
 
@@ -108,6 +109,7 @@ static void playChordFluid(unsigned char tone,  unsigned char pitch1,  unsigned 
 
     for (int i = 0; i < duration; i++)
     {
+        OCR0B = tone+toneMod;
         OCR0A = pitch1+pitchMod;
         RHYTHM_DELAY
         OCR0A = pitch2+pitchMod;
@@ -116,8 +118,8 @@ static void playChordFluid(unsigned char tone,  unsigned char pitch1,  unsigned 
         RHYTHM_DELAY
         OCR0A = pitch4+pitchMod;
         RHYTHM_DELAY
-        OCR0B = tone+(toneDir*i);
-        pitchMod += pitchDir*i;
+        toneMod += toneDir;
+        pitchMod += pitchDir;
     }
 
     pwmStop();
@@ -156,7 +158,7 @@ static void play()
 
 int main(void)
 {
-    TCCR0A = (1 << COM0A1) | (1 << COM0B1) | (1 << WGM00) | (1 << WGM01);
+    TCCR0A = (1 << COM0A1) | (1 << COM0B1) | (1 << WGM00);
     TCCR0B = (1 << WGM02); 
 
     SET_BIT(DDRD, DDD5);
