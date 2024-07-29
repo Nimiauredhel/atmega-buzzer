@@ -8,7 +8,7 @@
 #define SET_BIT(REG, BIT) (REG |= (1 << BIT))
 #define UNSET_BIT(REG, BIT) (REG &= ~(1 << BIT))
 
-#define RHYTHM_UNIT 42
+#define RHYTHM_UNIT 48
 #define RHYTHM_DELAY _delay_ms(RHYTHM_UNIT);
 
 unsigned int position = 0;
