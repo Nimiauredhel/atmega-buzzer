@@ -1,17 +1,68 @@
 #include <avr/io.h>
 #include <util/delay.h>
+#include "common.c"
 #include "notes.c"
-//#include "bach.c"
-#include "lostelf.c"
+#include "bach.c"
+//#include "lostelf.c"
 
-#define GET_BIT(REG, BIT) (REG & (1 << BIT))
-#define SET_BIT(REG, BIT) (REG |= (1 << BIT))
-#define UNSET_BIT(REG, BIT) (REG &= ~(1 << BIT))
+#define SLEEP_UNIT_USECS 1
+#define SLEEP_DELAY _delay_us(SLEEP_UNIT_USECS);
 
-#define RHYTHM_UNIT 48
-#define RHYTHM_DELAY _delay_ms(RHYTHM_UNIT);
+void instSilence(channel *channel)
+{
 
-unsigned int position = 0;
+}
+
+void instRegular(channel *channel)
+{
+    if (channel->currentPitchCount == 0) return;
+
+    *channel->toneReg =
+        channel->currentTone;
+    *channel->pitchReg =
+        channel->currentPitches[channel->nextPitchIndex];
+    if (channel->nextPitchIndex < channel->currentPitchCount-1)
+    {
+        channel->nextPitchIndex++;
+    }
+    else if (channel->nextPitchIndex == channel->currentPitchCount-1)
+    {
+        channel->nextPitchIndex = 0;
+    }
+}
+
+void instSine(channel *channel)
+{
+    static double wavePosition = 0.501;
+    static double waveDirection = 0.01;
+
+    *channel->pitchReg =
+        channel->currentPitches[(int)(channel->nextPitchIndex*sin(wavePosition))];
+    *channel->toneReg =
+        channel->currentTone;
+
+    wavePosition += waveDirection;
+
+    if (wavePosition >= 1.0 || wavePosition <= 0.5)
+    {
+        wavePosition *= -1;
+    }
+
+    if (channel->nextPitchIndex < channel->currentPitchCount-1)
+    {
+        channel->nextPitchIndex++;
+    }
+    else if (channel->nextPitchIndex == channel->currentPitchCount-1)
+    {
+        channel->nextPitchIndex = 0;
+    }
+}
+
+instrument instruments[] =
+{
+    instSilence, instRegular, instSine
+};
+
 
 static void pwmStart()
 {
@@ -27,131 +78,77 @@ static void pwmStop()
     UNSET_BIT(TCCR0B, CS02);
 }
 
-static void playNote(unsigned char tone, unsigned char pitch, unsigned char duration, unsigned char gap)
+static void readTrack(track *target)
 {
-    OCR0B = tone;
-    OCR0A = pitch;
-    pwmStart();
-
-    for (int i = 0; i < duration; i++)
+    if (target->remainingSleepTime > 0)
     {
-        RHYTHM_DELAY
+        target->remainingSleepTime -= SLEEP_UNIT_USECS;
+        return;
     }
 
-    pwmStop();
+    uint16_t position = target->sPosition;
+    uint32_t *tSequence = target->sequence;
+    channel *tChannel = target->channel;
 
-    for (int i = 0; i < gap; i++)
-    {
-        RHYTHM_DELAY
-    }
-}
-
-static void playNoteFluid(unsigned char tone, unsigned char pitch, unsigned char duration, unsigned char gap, char toneDir, char pitchDir)
-{
-    OCR0B = tone;
-    OCR0A = pitch;
-
-    pwmStart();
-
-    for (int i = 0; i < duration; i++)
-    {
-        RHYTHM_DELAY
-        OCR0B = tone + (toneDir*i);
-        OCR0A = pitch + (pitchDir*i);
-    }
-
-    pwmStop();
-
-    for (int i = 0; i < gap; i++)
-    {
-        RHYTHM_DELAY
-    }
-}
-
-static void playChord(unsigned char tone,  unsigned char pitch1,  unsigned char pitch2,  unsigned char pitch3, unsigned char pitch4, unsigned char duration, unsigned char gap)
-{
-    OCR0B = tone;
-    OCR0A = pitch1;
-
-    pwmStart();
-
-    for (int i = 0; i < duration; i++)
-    {
-        OCR0A = pitch1;
-        RHYTHM_DELAY
-        OCR0A = pitch2;
-        RHYTHM_DELAY
-        OCR0A = pitch3;
-        RHYTHM_DELAY
-        OCR0A = pitch4;
-        RHYTHM_DELAY
-    }
-
-    pwmStop();
-
-    for (int i = 0; i < gap; i++)
-    {
-        RHYTHM_DELAY
-        RHYTHM_DELAY
-        RHYTHM_DELAY
-        RHYTHM_DELAY
-    }
-}
-
-static void playChordFluid(unsigned char tone,  unsigned char pitch1,  unsigned char pitch2,  unsigned char pitch3, unsigned char pitch4, unsigned char duration, unsigned char gap, char toneDir, char pitchDir)
-{
-    unsigned char pitchMod = 0;
-    unsigned char toneMod = 0;
-    OCR0B = tone;
-    OCR0A = pitch1;
-
-    pwmStart();
-
-    for (int i = 0; i < duration; i++)
-    {
-        OCR0B = tone+toneMod;
-        OCR0A = pitch1+pitchMod;
-        RHYTHM_DELAY
-        OCR0A = pitch2+pitchMod;
-        RHYTHM_DELAY
-        OCR0A = pitch3+pitchMod;
-        RHYTHM_DELAY
-        OCR0A = pitch4+pitchMod;
-        RHYTHM_DELAY
-        toneMod += toneDir;
-        pitchMod += pitchDir;
-    }
-
-    pwmStop();
-
-    for (int i = 0; i < gap; i++)
-    {
-        RHYTHM_DELAY
-        RHYTHM_DELAY
-        RHYTHM_DELAY
-        RHYTHM_DELAY
-    }
-}
-
-static void play()
-{
-    switch (sequence[position]) 
+    switch (target->sequence[target->sPosition]) 
     {
         case 0:
-            playNote(sequence[position+1], sequence[position+4], sequence[position+2], sequence[position+3]);
-            position += 5;
+            // sleep for duration
+            target->remainingSleepTime =
+                tSequence[position+1];
+            target->sPosition = position+2;
             break;
         case 1:
-            playNoteFluid(sequence[position+1], sequence[position+4], sequence[position+2], sequence[position+3], sequence[position+5], sequence[position+6]);
-            position += 7;
+            // Set 1 pitch
+            tChannel->currentPitchCount=1;
+            tChannel->currentPitches[0] =
+                tSequence[position+1];
+            target->sPosition = position+2;
             break;
         case 2:
-            playChord(sequence[position+1], sequence[position+4], sequence[position+5], sequence[position+6], sequence[position+7], sequence[position+2], sequence[position+3]);
-            position += 8;
+            // Set 2 pitches
+            tChannel->currentPitchCount=2;
+            tChannel->currentPitches[0] =
+                tSequence[position+1];
+            tChannel->currentPitches[1] =
+                tSequence[position+2];
+            target->sPosition = position+3;
             break;
         case 3:
-            playChordFluid(sequence[position+1], sequence[position+4], sequence[position+5], sequence[position+6], sequence[position+7], sequence[position+2], sequence[position+3], sequence[position+8], sequence[position+9]);
-            position += 10;
+            // Set 3 pitches
+            tChannel->currentPitchCount=3;
+            tChannel->currentPitches[0] =
+                tSequence[position+1];
+            tChannel->currentPitches[1] =
+                tSequence[position+2];
+            tChannel->currentPitches[2] =
+                target->sequence[position+3];
+            target->sPosition = position+4;
+            break;
+        case 4:
+            // Set 4 pitches
+            tChannel->currentPitchCount=4;
+            tChannel->currentPitches[0] =
+                tSequence[position+1];
+            tChannel->currentPitches[1] =
+                tSequence[position+2];
+            tChannel->currentPitches[2] =
+                tSequence[position+3];
+            tChannel->currentPitches[3] =
+                tSequence[position+4];
+            target->sPosition = position+5;
+            break;
+        case 5:
+            // Set "tone" (voltage)
+            tChannel->currentTone =
+                tSequence[position+1];
+            target->sPosition = position+1;
+            break;
+        case 6:
+            // Set instrument function
+            tChannel->instrument =
+                instruments[tSequence[position+1]];
+            target->sPosition = position+1;
             break;
     }
 }
@@ -164,13 +161,39 @@ int main(void)
     SET_BIT(DDRD, DDD5);
     SET_BIT(DDRB, DDB5);
 
-    SET_BIT(PORTB, 5);
+    UNSET_BIT(PORTB, 5);
+    pwmStart();
 
-    unsigned int sequenceLength = sizeof(sequence) / sizeof(sequence[0]);
+    channel channels[] =
+    { 
+        {
+            &OCR0A,
+            &OCR0B,
+            0,
+            { 0, 0, 0, 0 },
+            0,
+            0,
+            instruments[0]
+        }
+    };
+
+    track tracks[] =
+    {
+        {
+            &channels[0],
+            sequence,
+            sizeof(sequence) / sizeof(sequence[0]),
+            0, 0
+        }
+    };
+
+    OCR0B = 10;
+    OCR0A = Gb4;
 
     for(;;)
     {
-        play();
-        if (position >= sequenceLength) position = 0;
+        readTrack(&tracks[0]);
+        channels[0].instrument(&channels[0]);
+        _delay_us(SLEEP_UNIT_USECS);
     }
 }

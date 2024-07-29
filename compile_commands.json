@@ -10,8 +10,8 @@
       "program.o",
       "program.c"
     ],
-    "directory": "/home/mickey/Repos/atmega-buzzer/notation",
-    "file": "/home/mickey/Repos/atmega-buzzer/notation/program.c",
-    "output": "/home/mickey/Repos/atmega-buzzer/notation/program.o"
+    "directory": "/home/mickey/Repos/atmega-buzzer",
+    "file": "/home/mickey/Repos/atmega-buzzer/program.c",
+    "output": "/home/mickey/Repos/atmega-buzzer/program.o"
   }
 ]
