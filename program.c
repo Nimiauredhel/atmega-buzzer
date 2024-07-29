@@ -7,6 +7,7 @@
 
 #define SLEEP_UNIT_USECS 1
 #define SLEEP_DELAY _delay_us(SLEEP_UNIT_USECS);
+#define RHYTHM_UNIT 6400
 
 void instSilence(channel *channel)
 {
@@ -86,16 +87,22 @@ static void readTrack(track *target)
         return;
     }
 
+    if (target->sPosition >= target->sLength-1)
+    {
+        target->sPosition = 0;
+    }
+
+    uint32_t code = target->sequence[target->sPosition];
     uint16_t position = target->sPosition;
-    uint32_t *tSequence = target->sequence;
+    uint8_t *tSequence = target->sequence;
     channel *tChannel = target->channel;
 
-    switch (target->sequence[target->sPosition]) 
+    switch (code) 
     {
         case 0:
             // sleep for duration
             target->remainingSleepTime =
-                tSequence[position+1];
+                tSequence[position+1]*RHYTHM_UNIT;
             target->sPosition = position+2;
             break;
         case 1:
@@ -142,14 +149,23 @@ static void readTrack(track *target)
             // Set "tone" (voltage)
             tChannel->currentTone =
                 tSequence[position+1];
-            target->sPosition = position+1;
+            target->sPosition = position+2;
             break;
         case 6:
             // Set instrument function
             tChannel->instrument =
                 instruments[tSequence[position+1]];
-            target->sPosition = position+1;
+            target->sPosition = position+2;
             break;
+        default:
+            for (int i = 0; i < code; i++)
+            {
+                SET_BIT(PORTB, 5);
+                _delay_ms(500);
+                UNSET_BIT(PORTB, 5);
+                _delay_ms(500);
+            }
+        break;
     }
 }
 

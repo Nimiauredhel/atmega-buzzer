@@ -29,13 +29,13 @@ typedef struct track
     // target channel associated with this track
     channel *channel;
     // the sequence of commands associated with this track
-    uint32_t *sequence;
+    uint8_t *sequence;
     // the length of the command sequence
     uint16_t sLength;
     // the current position of the command sequence
     uint16_t sPosition;
     // remaining track sleep time in microseconds
-    uint32_t remainingSleepTime;
+    uint64_t remainingSleepTime;
 } track;
 
 typedef void(*instrument)(channel *channel);
