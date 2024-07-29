@@ -21,7 +21,7 @@
 
 uint8_t sequence[] =
 {
-    INSTRUMENT(SQUARE)
+    INSTRUMENT(SINE)
 
     PITCH(Gb5) TONE(10) SLEEP(2) SILENCE(2)
 
