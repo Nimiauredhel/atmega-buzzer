@@ -157,6 +157,7 @@ static void readTrack(track *target)
             tChannel->currentPitchCount=1;
             tChannel->currentPitches[0] =
                 tSequence[position+1];
+            tChannel->nextPitchIndex = 0;
             target->sPosition = position+2;
             break;
         case 2:
@@ -166,6 +167,7 @@ static void readTrack(track *target)
                 tSequence[position+1];
             tChannel->currentPitches[1] =
                 tSequence[position+2];
+            tChannel->nextPitchIndex = 0;
             target->sPosition = position+3;
             break;
         case 3:
@@ -177,6 +179,7 @@ static void readTrack(track *target)
                 tSequence[position+2];
             tChannel->currentPitches[2] =
                 target->sequence[position+3];
+            tChannel->nextPitchIndex = 0;
             target->sPosition = position+4;
             break;
         case 4:
@@ -190,6 +193,7 @@ static void readTrack(track *target)
                 tSequence[position+3];
             tChannel->currentPitches[3] =
                 tSequence[position+4];
+            tChannel->nextPitchIndex = 0;
             target->sPosition = position+5;
             break;
         case 5:
