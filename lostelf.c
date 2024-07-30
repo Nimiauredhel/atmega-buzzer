@@ -1,46 +1,115 @@
+#include <avr/io.h>
 #include "notes.c"
+
 // sequence encoding:
 // first element: music event type (also implying length)
-// 0: playNote, 1: playNoteFluid, 2: playChord, 3: playChordFluid
+// 0: sleep, 1-4: select 1-4 pitches, 5: tone, 
+// 6: instrument index 7: rhythm unit (tempo)
 // following elements are the function parameters
-unsigned char sequence[] =
+
+#define SLEEP(x) 0, x,
+#define TONE(x) 5, x,
+#define SILENCE(x) TONE(0) SLEEP(x)
+#define PITCH(x) 1, x,
+#define PITCH2(x, y) 2, x, y,
+#define PITCH3(x, y, z) 3, x, y, z,
+#define PITCH4(x, y, z, w) 4, x, y, z, w,
+#define INSTRUMENT(x) 6, x,
+#define TEMPO(x) 7, x,
+#define JUMPBACK(x) 8, x,
+
+#define QUIET 0
+#define SQUARE 1
+#define SINE 2
+
+uint32_t sequence[] =
 {
-    3, 2, 12, 0, C3, F3, Ab3, C4, 1, 0,
-    3, 16, 4, 0, D3, G3, Bb3, D4, -1, 0,
-    3, 2, 12, 0, C3, F3, Ab3, C4, 1, 0,
-    3, 16, 4, 0, D3, G3, Bb3, D4, -1, 0,
-    3, 2, 12, 0, Eb3, Ab3, C4, Eb4, 1, 0,
-    3, 16, 4, 0, D3, G3, Bb3, D4, -1, 0,
-    3, 4, 8, 0, C3, F3, Ab3, C4, 1, 0,
-    3, 16, 8, 0, C3, F3, Ab3, C4, -1, 0,
+    TEMPO(256)
+                    INSTRUMENT(SQUARE)
 
-    3, 2, 12, 0, F3, C4, F4, Ab4, 1, 0,
-    3, 16, 4, 0, F3, Ab3, C4, F4, 1, 0,
-    3, 2, 12, 0, G3, D4, G4, Bb4, 1, 0,
-    3, 16, 4, 0, Ab3, C4, Eb4, Ab4, -1, 0,
-    3, 8, 4, 0, Ab3, C4, Eb4, C5, 0, 0,
-    3, 8, 4, 0, Ab3, C4, Eb4, Db5, 0, 0,
-    3, 8, 6, 0, G3, Bb3, D4, Bb4, -1, 0,
-    3, 2, 2, 0, G3, Bb3, D4, Ab4, 1, 0,
-    3, 4, 16, 0, C3, F3, Ab3, C5, 1, 0,
+            TONE(42)
+    PITCH4(C4, F4, Ab4, C5)
+                            SLEEP(8)
+                            SILENCE(4)
+            TONE(42)
+    PITCH4(C4, F4, Ab4, C5)
+                            SLEEP(8)
+                            SILENCE(10)
+            TONE(42)
+    PITCH4(C4, F4, Ab4, C5)
+                            SLEEP(8)
+                            SILENCE(4)
+            TONE(42)
+    PITCH4(C4, F4, Ab4, C5)
+                            SLEEP(8)
+                            SILENCE(10)
 
-    3, 2, 12, 0, Eb3, Ab3, B3, Eb4, 1, 0,
-    3, 16, 4, 0, F3, Bb3, Db4, F4, -1, 0,
-    3, 2, 12, 0, Eb3, Ab3, B3, Eb4, 1, 0,
-    3, 16, 4, 0, F3, Bb3, Db4, F4, -1, 0,
-    3, 2, 12, 0, Gb3, B3, Eb4, Eb4, 1, 0,
-    3, 16, 4, 0, Gb3, B3, Eb4, D4, -1, 0,
-    3, 4, 8, 0, D3, F3, Bb3, Eb4, 1, 0,
-    3, 16, 8, 0, D3, F3, Bb3, D4, -1, 0,
+            TONE(32)
+    PITCH4(C4, F4, Ab4, C5)
+                            SLEEP(18)
+    PITCH4(D4, G4, Bb5, D5)
+                            SLEEP(6)
+            JUMPBACK(14)
+    PITCH4(Eb4, Ab4, C5, Eb5)
+                            SLEEP(18)
+    PITCH4(D4, G4, Bb5, D5)
+                            SLEEP(6)
+    PITCH4(C4, F4, Ab4, C5)
+                            SLEEP(24)
 
-    3, 2, 12, 0, Eb3, Ab3, B3, Eb4, 1, 0,
-    1, 2, 4, 0, Ab3, 1, 0,
-    1, 2, 4, 0, B3, 1, 0,
-    1, 2, 2, 2, Eb3, 1, 1,
-    3, 4, 4, 0, Db3, Ab3, Db4, Gb4, 1, 0,
-    3, 16, 4, 0, Db3, Ab3, Db4, F4, -1, 0,
-    1, 4, 16, 0, Db4, 1, 0,
-    1, 16, 15, 1, Bb3, -1, 0,
-    3, 4, 16, 0, Eb3, Gb3, Bb4, Eb4, 1, 0,
-    3, 48, 32, 0, Eb3, Gb3, Bb4, Eb4, -1, 0,
+//
+    PITCH4(F3, C4, Ab4, Ab4)
+                            SLEEP(18)
+    PITCH4(F3, Ab3, C4, F4)
+                            SLEEP(6)
+    PITCH4(G3, D4, G4, Bb4)
+                            SLEEP(18)
+    PITCH4(Ab3, C4, Eb4, Ab4)
+                            SLEEP(6)
+                            //
+    PITCH4(Ab3, C4, Eb4, C5)
+                            SLEEP(6)
+    PITCH4(Ab3, C4, Eb4, Db5)
+                            SLEEP(6)
+    PITCH4(G3, Bb3, D4, Bb4)
+                            SLEEP(9)
+    PITCH4(G3, Bb3, D4, Ab4)
+                            SLEEP(3)
+    PITCH4(C3, F3, Ab3, C5)
+                            SLEEP(24)
+                            //
+    PITCH4(Eb4, Ab4, B4, Eb5)
+                            SLEEP(18)
+    PITCH4(F4, Bb4, Db5, F5)
+                            SLEEP(6)
+            JUMPBACK(14)
+    PITCH4(Gb4, B4, Eb5, Gb5)
+                            SLEEP(18)
+    PITCH4(Gb4, B4, Eb5, Ab5)
+                            SLEEP(6)
+    PITCH4(D4, F4, Bb4, Eb5)
+                            SLEEP(12)
+    PITCH4(D4, F4, Bb4, D5)
+                            SLEEP(12)
+                            //
+    PITCH4(Eb4, Ab4, B4, Eb5)
+                            SLEEP(18)
+    PITCH(Ab4) 
+    SLEEP(2) 
+    PITCH(B4) 
+    SLEEP(2) 
+    PITCH(Eb5)
+    SLEEP(2) 
+    PITCH4(Db4, Ab4, Db5, Gb5)
+                            SLEEP(6)
+    PITCH4(Db4, Ab4, Db5, F5)
+                            SLEEP(6)
+    PITCH(Db5)
+    SLEEP(6) 
+    PITCH(Bb4) 
+    SLEEP(6) 
+    PITCH4(Eb4, Gb4, Bb5, Eb5)
+                            SLEEP(24)
+    PITCH4(Eb3, Gb4, Bb5, Eb5)
+                            SLEEP(24)
 };

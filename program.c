@@ -3,13 +3,14 @@
 #include <math.h>
 #include "common.c"
 #include "notes.c"
-#include "bach.c"
-//#include "lostelf.c"
+//#include "bach.c"
+#include "lostelf.c"
+//#include "testnotation.c"
 
 #define SIN_LENGTH 640
 
-static uint64_t sleepUnit = 4;
-static uint64_t rhythmUnit = 4800;
+static uint64_t sleepUnit = 512;
+static uint64_t rhythmUnit = 256;
 static const uint16_t sinLength = SIN_LENGTH;
 int8_t sinArr[SIN_LENGTH] = {0};
 
@@ -35,17 +36,29 @@ static void instRegular(channel *channel)
 {
     if (channel->currentPitchCount == 0) return;
 
+    if (channel->nextPitchIndex >= channel->currentPitchCount)
+    {
+        channel->nextPitchIndex = 0;
+    }
+
     *channel->toneReg =
         channel->currentTone;
     *channel->pitchReg =
         channel->currentPitches[channel->nextPitchIndex];
-    if (channel->nextPitchIndex < channel->currentPitchCount-1)
+
+    channel->polyCycleCounter++;
+
+    if (channel->polyCycleCounter >= channel->polyCycleThreshold)
     {
-        channel->nextPitchIndex++;
-    }
-    else if (channel->nextPitchIndex == channel->currentPitchCount-1)
-    {
-        channel->nextPitchIndex = 0;
+        channel->polyCycleCounter = 0;
+        if (channel->nextPitchIndex < channel->currentPitchCount-1)
+        {
+            channel->nextPitchIndex++;
+        }
+        else if (channel->nextPitchIndex == channel->currentPitchCount-1)
+        {
+            channel->nextPitchIndex = 0;
+        }
     }
 }
 
@@ -75,13 +88,19 @@ static void instSine(channel *channel)
         }
     }
 
-    if (channel->nextPitchIndex < channel->currentPitchCount-1)
+    channel->polyCycleCounter++;
+
+    if (channel->polyCycleCounter >= channel->polyCycleThreshold)
     {
-        channel->nextPitchIndex++;
-    }
-    else if (channel->nextPitchIndex == channel->currentPitchCount-1)
-    {
-        channel->nextPitchIndex = 0;
+        channel->polyCycleCounter = 0;
+        if (channel->nextPitchIndex < channel->currentPitchCount-1)
+        {
+            channel->nextPitchIndex++;
+        }
+        else if (channel->nextPitchIndex == channel->currentPitchCount-1)
+        {
+            channel->nextPitchIndex = 0;
+        }
     }
 }
 
@@ -107,9 +126,11 @@ static void pwmStop()
 
 static void readTrack(track *target)
 {
+    static uint16_t jumpedFrom = 0;
+
     if (target->remainingSleepTime > 0)
     {
-        target->remainingSleepTime--;
+        target->remainingSleepTime-=sleepUnit;
         return;
     }
 
@@ -128,7 +149,7 @@ static void readTrack(track *target)
         case 0:
             // sleep for duration
             target->remainingSleepTime =
-                tSequence[position+1]*rhythmUnit;
+                tSequence[position+1]*rhythmUnit*sleepUnit;
             target->sPosition = position+2;
             break;
         case 1:
@@ -189,6 +210,19 @@ static void readTrack(track *target)
                 tSequence[position+1];
             target->sPosition = position+2;
             break;
+        case 8:
+            // Jump back (repeat)
+            if (jumpedFrom == position)
+            {
+                target->sPosition = position+2;
+                jumpedFrom = 0;
+            }
+            else
+            {
+                jumpedFrom = position;
+                target->sPosition = position-(tSequence[position+1]);
+            }
+            break;
         default:
             for (int i = 0; i < code; i++)
             {
@@ -223,9 +257,9 @@ int main(void)
             &OCR0A,
             &OCR0B,
             0,
-            { 0, 0, 0, 0 },
-            0,
-            0,
+            { 255, 255, 255, 255 },
+            0, 0,
+            96, 0,
             instruments[0]
         }
     };

@@ -3,7 +3,8 @@
 
 // sequence encoding:
 // first element: music event type (also implying length)
-// 0: sleep, 1-4: select 1-4 pitches, 5: tone, 6: instrument index
+// 0: sleep, 1-4: select 1-4 pitches, 5: tone, 
+// 6: instrument index 7: rhythm unit (tempo)
 // following elements are the function parameters
 
 #define SLEEP(x) 0, x,
@@ -15,6 +16,7 @@
 #define PITCH4(x, y, z, w) 4, x, y, z, w,
 #define INSTRUMENT(x) 6, x,
 #define TEMPO(x) 7, x,
+#define JUMPBACK(x) 8, x,
 
 #define QUIET 0
 #define SQUARE 1
@@ -22,9 +24,9 @@
 
 uint32_t sequence[] =
 {
-    TEMPO(6400)
-    INSTRUMENT(SINE)
+TEMPO(6400)
 TONE(1)
+    INSTRUMENT(SINE)
 SLEEP(2)
 TONE(2)
 SLEEP(2)

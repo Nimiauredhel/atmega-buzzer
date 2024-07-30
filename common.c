@@ -6,12 +6,10 @@
 
 typedef struct channel
 {
-
     // write to this register to set the channel frequency
     volatile uint8_t *pitchReg;
     // write to this register to set the channel.. voltage?
     volatile uint8_t *toneReg;
-
     // the number of pitches represented by this channel
     uint8_t currentPitchCount;
     // array of pitches represented by this channel
@@ -20,6 +18,8 @@ typedef struct channel
     uint8_t nextPitchIndex;
     // current "tone" (voltage?) set on this channel
     uint8_t currentTone;
+    uint8_t polyCycleThreshold;
+    uint8_t polyCycleCounter;
     // the "instrument" function assigned to this channel, controlling the waveform etc.
     void (*instrument)(struct channel *ch);
 } channel;
