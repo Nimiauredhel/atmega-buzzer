@@ -6,30 +6,32 @@
 #include "bach.c"
 //#include "lostelf.c"
 
-#define SLEEP_UNIT_USECS 1
-#define SLEEP_DELAY _delay_us(SLEEP_UNIT_USECS);
-#define RHYTHM_UNIT 3200
-#define SIN_LENGTH 512
+#define SIN_LENGTH 640
 
-static int8_t sinArr[SIN_LENGTH] = {0};
+static uint64_t sleepUnit = 4;
+static uint64_t rhythmUnit = 4800;
+static const uint16_t sinLength = SIN_LENGTH;
+int8_t sinArr[SIN_LENGTH] = {0};
 
-void initializeSinArray()
+#define SLEEP_DELAY _delay_us(sleepUnit);
+
+static void initializeSinArray()
 {
     double value = 0.5;
 
-    for (int i = 0; i < SIN_LENGTH; i++)
+    for (int i = 0; i < sinLength; i++)
     {
-        sinArr[i] = (int8_t)(sin(value)*10.0);
-        value += 1.0 / SIN_LENGTH;
+        sinArr[i] = (int8_t)(sin(value) * 10);
+        value += 1.0 / sinLength;
     }
 }
 
-void instSilence(channel *channel)
+static void instSilence(channel *channel)
 {
 
 }
 
-void instRegular(channel *channel)
+static void instRegular(channel *channel)
 {
     if (channel->currentPitchCount == 0) return;
 
@@ -47,7 +49,7 @@ void instRegular(channel *channel)
     }
 }
 
-void instSine(channel *channel)
+static void instSine(channel *channel)
 {
     static const int8_t waveThreshold = 4;
     static int8_t waveCounter = 0;
@@ -56,7 +58,7 @@ void instSine(channel *channel)
 
     *channel->pitchReg =
         (channel->currentPitches[(channel->nextPitchIndex)]
-                *sinArr[wavePosition])/10;
+                *sinArr[wavePosition]) / 10;
     *channel->toneReg =
         channel->currentTone;
 
@@ -67,7 +69,7 @@ void instSine(channel *channel)
         waveCounter = 0;
         wavePosition += waveDirection;
 
-        if (wavePosition >= SIN_LENGTH || wavePosition <= 0)
+        if (wavePosition >= sinLength || wavePosition <= 0)
         {
             waveDirection *= -1;
         }
@@ -83,7 +85,7 @@ void instSine(channel *channel)
     }
 }
 
-instrument instruments[] =
+const instrument instruments[] =
 {
     instSilence, instRegular, instSine
 };
@@ -107,7 +109,7 @@ static void readTrack(track *target)
 {
     if (target->remainingSleepTime > 0)
     {
-        target->remainingSleepTime -= SLEEP_UNIT_USECS;
+        target->remainingSleepTime--;
         return;
     }
 
@@ -118,7 +120,7 @@ static void readTrack(track *target)
 
     uint32_t code = target->sequence[target->sPosition];
     uint16_t position = target->sPosition;
-    uint8_t *tSequence = target->sequence;
+    uint32_t *tSequence = target->sequence;
     channel *tChannel = target->channel;
 
     switch (code) 
@@ -126,7 +128,7 @@ static void readTrack(track *target)
         case 0:
             // sleep for duration
             target->remainingSleepTime =
-                tSequence[position+1]*RHYTHM_UNIT;
+                tSequence[position+1]*rhythmUnit;
             target->sPosition = position+2;
             break;
         case 1:
@@ -181,6 +183,12 @@ static void readTrack(track *target)
                 instruments[tSequence[position+1]];
             target->sPosition = position+2;
             break;
+        case 7:
+            // Set rhythm unit (tempo)
+            rhythmUnit =
+                tSequence[position+1];
+            target->sPosition = position+2;
+            break;
         default:
             for (int i = 0; i < code; i++)
             {
@@ -206,6 +214,9 @@ int main(void)
     UNSET_BIT(PORTB, 5);
     pwmStart();
 
+    SLEEP_DELAY
+    SLEEP_DELAY
+
     channel channels[] =
     { 
         {
@@ -229,13 +240,13 @@ int main(void)
         }
     };
 
-    OCR0B = 10;
-    OCR0A = Gb4;
+    SLEEP_DELAY
+    SLEEP_DELAY
 
     for(;;)
     {
         readTrack(&tracks[0]);
         channels[0].instrument(&channels[0]);
-        _delay_us(SLEEP_UNIT_USECS);
+        SLEEP_DELAY
     }
 }

@@ -29,10 +29,10 @@ typedef struct track
     // target channel associated with this track
     channel *channel;
     // the sequence of commands associated with this track
-    uint8_t *sequence;
+    uint32_t *sequence;
     // the length of the command sequence
     uint16_t sLength;
-    // the current position of the command sequence
+    // te current position of the command sequence
     uint16_t sPosition;
     // remaining track sleep time in microseconds
     uint64_t remainingSleepTime;
