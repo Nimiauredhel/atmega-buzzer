@@ -1,5 +1,6 @@
 #include <avr/io.h>
 #include <util/delay.h>
+#include <math.h>
 #include "common.c"
 #include "notes.c"
 #include "bach.c"
@@ -7,7 +8,21 @@
 
 #define SLEEP_UNIT_USECS 1
 #define SLEEP_DELAY _delay_us(SLEEP_UNIT_USECS);
-#define RHYTHM_UNIT 6400
+#define RHYTHM_UNIT 3200
+#define SIN_LENGTH 512
+
+static int8_t sinArr[SIN_LENGTH] = {0};
+
+void initializeSinArray()
+{
+    double value = 0.5;
+
+    for (int i = 0; i < SIN_LENGTH; i++)
+    {
+        sinArr[i] = (int8_t)(sin(value)*10.0);
+        value += 1.0 / SIN_LENGTH;
+    }
+}
 
 void instSilence(channel *channel)
 {
@@ -34,19 +49,28 @@ void instRegular(channel *channel)
 
 void instSine(channel *channel)
 {
-    static double wavePosition = 0.501;
-    static double waveDirection = 0.01;
+    static const int8_t waveThreshold = 4;
+    static int8_t waveCounter = 0;
+    static uint16_t wavePosition = 0;
+    static int8_t waveDirection = 1;
 
     *channel->pitchReg =
-        channel->currentPitches[(int)(channel->nextPitchIndex*sin(wavePosition))];
+        (channel->currentPitches[(channel->nextPitchIndex)]
+                *sinArr[wavePosition])/10;
     *channel->toneReg =
         channel->currentTone;
 
-    wavePosition += waveDirection;
+    waveCounter++;
 
-    if (wavePosition >= 1.0 || wavePosition <= 0.5)
+    if (waveCounter >= waveThreshold)
     {
-        wavePosition *= -1;
+        waveCounter = 0;
+        wavePosition += waveDirection;
+
+        if (wavePosition >= SIN_LENGTH || wavePosition <= 0)
+        {
+            waveDirection *= -1;
+        }
     }
 
     if (channel->nextPitchIndex < channel->currentPitchCount-1)
@@ -171,6 +195,8 @@ static void readTrack(track *target)
 
 int main(void)
 {
+    initializeSinArray();
+
     TCCR0A = (1 << COM0A1) | (1 << COM0B1) | (1 << WGM00);
     TCCR0B = (1 << WGM02); 
 
