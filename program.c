@@ -4,8 +4,8 @@
 #include "common.c"
 #include "notes.c"
 //#include "bach.c"
-#include "lostelf.c"
-//#include "testnotation.c"
+//#include "lostelf.c"
+#include "testnotation.c"
 
 #define SIN_LENGTH 640
 
