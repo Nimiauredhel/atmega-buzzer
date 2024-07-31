@@ -5,8 +5,8 @@
 #include "common.c"
 #include "notes.c"
 //#include "bach.c"
-//#include "lostelf.c"
-#include "testnotation.c"
+#include "lostelf.c"
+//#include "testnotation.c"
 
 #define SIN_LENGTH 640
 
@@ -108,8 +108,6 @@ const instrument instruments[] =
 };
 static void readTrack(track *target)
 {
-    static uint16_t jumpedFrom = 0;
-
     if (target->remainingSleepTime > 0)
     {
         target->remainingSleepTime-=sleepUnit;
@@ -198,14 +196,14 @@ static void readTrack(track *target)
             break;
         case 8:
             // Jump back (repeat)
-            if (jumpedFrom == position)
+            if (target->jPosition == position)
             {
                 target->sPosition = position+2;
-                jumpedFrom = 0;
+                target->jPosition = 0;
             }
             else
             {
-                jumpedFrom = position;
+                target->jPosition = position;
                 target->sPosition = position-(tSequence[position+1]);
             }
             break;
@@ -333,12 +331,14 @@ static track* initializeTracks(channel* channels)
     tracks[0].sLength = sizeof(sequenceBass) / sizeof(sequenceBass[0]);
     tracks[0].sPosition = 0;
     tracks[0].remainingSleepTime = 0;
+    tracks[0].jPosition = 0;
 
     tracks[1].channel = &channels[1];
     tracks[1].sequence = sequenceTreble;
     tracks[1].sLength = sizeof(sequenceTreble) / sizeof(sequenceTreble[0]);
     tracks[1].sPosition = 0;
     tracks[1].remainingSleepTime = 0;
+    tracks[1].jPosition = 0;
 
     return tracks;
 }

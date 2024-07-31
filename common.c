@@ -76,8 +76,10 @@ typedef struct track
     uint32_t *sequence;
     // the length of the command sequence
     uint16_t sLength;
-    // te current position of the command sequence
+    // the current position of the command sequence
     uint16_t sPosition;
+    // the last position from which a jump was triggered
+    uint16_t jPosition;
     // remaining track sleep time in microseconds
     uint64_t remainingSleepTime;
 } track;
