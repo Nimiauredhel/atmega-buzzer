@@ -22,7 +22,7 @@
 #define SQUARE 1
 #define SINE 2
 
-uint32_t sequence[] =
+uint32_t sequenceTreble[] =
 {
     INSTRUMENT(SQUARE)
 
@@ -49,11 +49,11 @@ uint32_t sequence[] =
     TONE(10)
     PITCH2(G4, E5)
     SLEEP(6)
-    PITCH3(C3, G4, E5)
+    PITCH2(G4, E5)
     SLEEP(6)
     PITCH2(Ab4, F5)
     SLEEP(6)
-    PITCH3(F3, Ab4, F5)
+    PITCH2(Ab4, F5)
     SLEEP(6)
     TONE(9)
     PITCH2(Bb4, G5)
@@ -61,7 +61,7 @@ uint32_t sequence[] =
     TONE(8)
     SLEEP(3)
     TONE(7)
-    PITCH3(D3, Bb4, G5)
+    PITCH2(Bb4, G5)
     SLEEP(3)
     TONE(6)
     SLEEP(3)
@@ -71,8 +71,39 @@ uint32_t sequence[] =
     TONE(4)
     SLEEP(3)
     TONE(3)
-    PITCH3(F3, Ab4, F5)
+    PITCH2(Ab4, F5)
     SLEEP(3)
     TONE(2)
     SLEEP(3)
+};
+uint32_t sequenceBass[] =
+{
+    INSTRUMENT(SQUARE)
+    PITCH(C3) // just to shut up the beep
+    TONE(0)
+
+    SLEEP(6)
+    SLEEP(6)
+    SLEEP(6)
+    SLEEP(6)
+    SLEEP(6)
+    SLEEP(6)
+    SLEEP(6)
+    SLEEP(6)
+    SLEEP(6)
+        TONE(10)
+        PITCH(C3)
+    SLEEP(6)
+        SILENCE(6)
+        TONE(10)
+        PITCH(F3)
+    SLEEP(6)
+        SILENCE(6)
+        TONE(10)
+        PITCH(D3)
+    SLEEP(6)
+        SILENCE(6)
+        TONE(10)
+        PITCH(F3)
+    SLEEP(6)
 };

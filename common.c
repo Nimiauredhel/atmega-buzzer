@@ -4,12 +4,56 @@
 #define SET_BIT(REG, BIT) (REG |= (1 << BIT))
 #define UNSET_BIT(REG, BIT) (REG &= ~(1 << BIT))
 
+typedef struct variableLengthAddress
+{
+    uint8_t addressLength;
+    union address
+    {
+        volatile uint8_t *eight;
+        volatile uint16_t *sixteen;
+    } address;
+} variableLengthAddress;
+
+uint16_t VLA_Read(variableLengthAddress *target)
+{
+    switch (target->addressLength)
+    {
+        case 8:
+            return *target->address.eight;
+            break;
+        case 16:
+            return *target->address.sixteen;
+            break;
+        default:
+            break;
+    }
+}
+
+void VLA_Write(uint16_t value, variableLengthAddress *target)
+{
+    switch (target->addressLength)
+    {
+        case 8:
+            *target->address.eight = value;
+            break;
+        case 16:
+            *target->address.sixteen = value;
+            break;
+        default:
+            break;
+    }
+}
+
+typedef struct device
+{
+    variableLengthAddress pitch;
+    variableLengthAddress width;
+
+} device;
+
 typedef struct channel
 {
-    // write to this register to set the channel frequency
-    volatile uint8_t *pitchReg;
-    // write to this register to set the channel.. voltage?
-    volatile uint8_t *toneReg;
+    device *device;
     // the number of pitches represented by this channel
     uint8_t currentPitchCount;
     // array of pitches represented by this channel

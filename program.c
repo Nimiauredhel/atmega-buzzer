@@ -1,6 +1,7 @@
 #include <avr/io.h>
 #include <util/delay.h>
 #include <math.h>
+#include <stdlib.h>
 #include "common.c"
 #include "notes.c"
 //#include "bach.c"
@@ -41,10 +42,9 @@ static void instRegular(channel *channel)
         channel->nextPitchIndex = 0;
     }
 
-    *channel->toneReg =
-        channel->currentTone;
-    *channel->pitchReg =
-        channel->currentPitches[channel->nextPitchIndex];
+    VLA_Write(channel->currentTone, &channel->device->width);
+    VLA_Write(channel->currentPitches[channel->nextPitchIndex], 
+            &channel->device->pitch);
 
     channel->polyCycleCounter++;
 
@@ -69,11 +69,9 @@ static void instSine(channel *channel)
     static uint16_t wavePosition = 0;
     static int8_t waveDirection = 1;
 
-    *channel->pitchReg =
-        (channel->currentPitches[(channel->nextPitchIndex)]
-                *sinArr[wavePosition]) / 10;
-    *channel->toneReg =
-        channel->currentTone;
+    VLA_Write(channel->currentTone, &channel->device->width);
+    VLA_Write((channel->currentPitches[(channel->nextPitchIndex)]
+                *sinArr[wavePosition]) / 10, &channel->device->pitch);
 
     waveCounter++;
 
@@ -108,22 +106,6 @@ const instrument instruments[] =
 {
     instSilence, instRegular, instSine
 };
-
-
-static void pwmStart()
-{
-    //SET_BIT(TCCR0B, CS00);
-    //SET_BIT(TCCR0B, CS01);
-    SET_BIT(TCCR0B, CS02);
-}
-
-static void pwmStop()
-{
-    UNSET_BIT(TCCR0B, CS00);
-    UNSET_BIT(TCCR0B, CS01);
-    UNSET_BIT(TCCR0B, CS02);
-}
-
 static void readTrack(track *target)
 {
     static uint16_t jumpedFrom = 0;
@@ -239,52 +221,158 @@ static void readTrack(track *target)
     }
 }
 
+// timer counter 0
+static  void initializeTimerCounter0(void)
+{
+    TCCR0A = (1 << COM0A1) | (1 << COM0B1) | (1 << WGM00);
+    TCCR0B = (1 << WGM02); 
+}
+static void timerCounter0Start(void)
+{
+    // 1 0 0 - clk/256
+    //SET_BIT(TCCR0B, CS00);
+    //SET_BIT(TCCR0B, CS01);
+    SET_BIT(TCCR0B, CS02);
+}
+static void timerCounter0Stop(void)
+{
+    //UNSET_BIT(TCCR0B, CS00);
+    //UNSET_BIT(TCCR0B, CS01);
+    UNSET_BIT(TCCR0B, CS02);
+}
+// timer counter 1
+static  void initializeTimerCounter1(void)
+{
+    TCCR1A = (1 << COM1A1) | (1 << COM1B1) | (1 << WGM10);
+    TCCR1B = (1 << WGM13); 
+}
+static void timerCounter1Start(void)
+{
+    // 1 0 0 - clk/256
+    //SET_BIT(TCCR1B, CS10);
+    //SET_BIT(TCCR1B, CS11);
+    SET_BIT(TCCR1B, CS12);
+}
+static void timerCounter1Stop(void)
+{
+    //UNSET_BIT(TCCR1B, CS10);
+    //UNSET_BIT(TCCR1B, CS11);
+    UNSET_BIT(TCCR1B, CS12);
+}
+
+static void initializePortB(void)
+{
+    DDRB = 0;
+    SET_BIT(DDRB, DDB1);
+    SET_BIT(DDRB, DDB2);
+    SET_BIT(DDRB, DDB5);
+}
+
+static void initializePortD(void)
+{
+    DDRD = 0;
+    SET_BIT(DDRD, DDD5);
+    SET_BIT(DDRD, DDD6);
+}
+
+static device* initializeDevices(void)
+{
+    device *devices = malloc(sizeof(device)*2);
+
+    // timer counter 0
+    devices[0].pitch.addressLength = 8;
+    devices[0].pitch.address.eight = &OCR0A;
+    devices[0].width.addressLength = 8;
+    devices[0].width.address.eight = &OCR0B;
+    // timer counter 1
+    devices[1].pitch.addressLength = 16;
+    devices[1].pitch.address.sixteen = &OCR1A;
+    devices[1].width.addressLength = 16;
+    devices[1].width.address.sixteen = &OCR1B;
+
+    return devices;
+}
+
+static channel* initializeChannels(device *devices)
+{
+    channel *channels = malloc(sizeof(channel)*2);
+
+    channels[0].device = &devices[0];
+    channels[0].currentTone = 0;
+    channels[0].currentPitches[0] = 255;
+    channels[0].currentPitches[1] = 255;
+    channels[0].currentPitches[2] = 255;
+    channels[0].currentPitches[3] = 255;
+    channels[0].currentPitchCount = 0;
+    channels[0].nextPitchIndex = 0;
+    channels[0].polyCycleThreshold = 96;
+    channels[0].polyCycleCounter = 0;
+    channels[0].instrument = instruments[0];
+
+    channels[1].device = &devices[1];
+    channels[1].currentTone = 0;
+    channels[1].currentPitches[0] = 255;
+    channels[1].currentPitches[1] = 255;
+    channels[1].currentPitches[2] = 255;
+    channels[1].currentPitches[3] = 255;
+    channels[1].currentPitchCount = 0;
+    channels[1].nextPitchIndex = 0;
+    channels[1].polyCycleThreshold = 96;
+    channels[1].polyCycleCounter = 0;
+    channels[1].instrument = instruments[0];
+
+    return channels;
+}
+
+static track* initializeTracks(channel* channels)
+{
+    track *tracks = malloc(sizeof(track)*2);
+
+    tracks[0].channel = &channels[0];
+    tracks[0].sequence = sequenceBass;
+    tracks[0].sLength = sizeof(sequenceBass) / sizeof(sequenceBass[0]);
+    tracks[0].sPosition = 0;
+    tracks[0].remainingSleepTime = 0;
+
+    tracks[1].channel = &channels[1];
+    tracks[1].sequence = sequenceTreble;
+    tracks[1].sLength = sizeof(sequenceTreble) / sizeof(sequenceTreble[0]);
+    tracks[1].sPosition = 0;
+    tracks[1].remainingSleepTime = 0;
+
+    return tracks;
+}
+
 int main(void)
 {
     initializeSinArray();
 
-    TCCR0A = (1 << COM0A1) | (1 << COM0B1) | (1 << WGM00);
-    TCCR0B = (1 << WGM02); 
+    initializePortB();
+    initializePortD();
 
-    SET_BIT(DDRD, DDD5);
-    SET_BIT(DDRB, DDB5);
+    initializeTimerCounter0();
+    initializeTimerCounter1();
+    timerCounter0Start();
+    timerCounter1Start();
 
+    // turn off built-in led - to use for debugging later
     UNSET_BIT(PORTB, 5);
-    pwmStart();
 
-    SLEEP_DELAY
-    SLEEP_DELAY
+    // initialize the devices - interfaces to audio emitting hardware
+    device *devices = initializeDevices();
+    // initialize the channels - device usage & state management
+    channel *channels = initializeChannels(devices);
+    // initialize the tracks - parallel streams of commands to the channels
+    track *tracks = initializeTracks(channels);
 
-    channel channels[] =
-    { 
-        {
-            &OCR0A,
-            &OCR0B,
-            0,
-            { 255, 255, 255, 255 },
-            0, 0,
-            96, 0,
-            instruments[0]
-        }
-    };
-
-    track tracks[] =
-    {
-        {
-            &channels[0],
-            sequence,
-            sizeof(sequence) / sizeof(sequence[0]),
-            0, 0
-        }
-    };
-
-    SLEEP_DELAY
     SLEEP_DELAY
 
     for(;;)
     {
         readTrack(&tracks[0]);
+        readTrack(&tracks[1]);
         channels[0].instrument(&channels[0]);
+        channels[1].instrument(&channels[1]);
         SLEEP_DELAY
     }
 }
