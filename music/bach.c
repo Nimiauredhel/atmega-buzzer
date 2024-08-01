@@ -1,4 +1,4 @@
-#include "notes.c"
+#include "../notes.c"
 #include <avr/io.h>
 
 // sequence encoding:

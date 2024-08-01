@@ -25,6 +25,7 @@ uint16_t VLA_Read(variableLengthAddress *target)
             return *target->address.sixteen;
             break;
         default:
+            return *target->address.eight;
             break;
     }
 }
@@ -73,7 +74,7 @@ typedef struct track
     // target channel associated with this track
     channel *channel;
     // the sequence of commands associated with this track
-    uint32_t *sequence;
+    uint16_t *sequence;
     // the length of the command sequence
     uint16_t sLength;
     // the current position of the command sequence

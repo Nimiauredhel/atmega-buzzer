@@ -1,5 +1,5 @@
 #include <avr/io.h>
-#include "notes.c"
+#include "../notes.c"
 
 // sequence encoding:
 // first element: music event type (also implying length)

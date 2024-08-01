@@ -1,0 +1,174 @@
+#include <avr/io.h>
+#include "notationdefines.c"
+#include "../notes.c"
+
+uint16_t sequenceTreble[] =
+{
+    TEMPO(64)
+    INSTRUMENT(SQUARE)
+    TONE(24)
+    PITCH(G5) SLEEP(4) SILENCE(4) TONE(24)
+    PITCH(F5) SLEEP(4) SILENCE(4)
+    //
+    TONE(32)
+    PITCH(E5) SLEEP(8)
+    TONE(24)
+    PITCH(D5) SLEEP(4)
+    PITCH(C5) SLEEP(4)
+    PITCH(B4) SLEEP(4)
+    PITCH(Db5) SLEEP(3) SILENCE(1)
+    //
+    TONE(32)
+    PITCH(D5) SLEEP(8)
+    TONE(24)
+    PITCH(E5) SLEEP(4)
+    PITCH(Gb5) SLEEP(4)
+    PITCH(G5) SLEEP(4)
+    PITCH(E5) SLEEP(3) SILENCE(1)
+    //
+    TONE(32)
+    PITCH(Gb5) SLEEP(12) SILENCE(4) TONE(32)
+    PITCH(D5) SLEEP(12) SILENCE(4)
+    TONE(24)
+    PITCH(G5) SLEEP(4) SILENCE(4) TONE(24)
+    PITCH(G5) SLEEP(4) SILENCE(4)
+    //
+    TONE(32)
+    PITCH(A5) SLEEP(8)
+    TONE(24)
+    PITCH(G5) SLEEP(4)
+    PITCH(F5) SLEEP(4)
+    PITCH(E5) SLEEP(4)
+    PITCH(F5) SLEEP(3) SILENCE(1)
+    //
+    TONE(32)
+    PITCH(G5) SLEEP(8)
+    TONE(24)
+    PITCH(F5) SLEEP(4)
+    PITCH(E5) SLEEP(4)
+    PITCH(D5) SLEEP(4)
+    PITCH(E5) SLEEP(3) SILENCE(1)
+    //
+    TONE(32)
+    PITCH(C5)  SLEEP(12) SILENCE(4)  TONE(32)
+    PITCH(C5) SLEEP(12) SILENCE(4)
+    TONE(24)                      
+    PITCH(D5) SLEEP(4) SILENCE(4) TONE(24)
+    PITCH(D5) SLEEP(4) SILENCE(4)
+    //
+    TONE(32)
+    PITCH(A5) SLEEP(8)
+    TONE(24)  SLEEP(4)
+    PITCH(G5) SLEEP(4)
+    PITCH(Gb5) SLEEP(4) SILENCE(4)
+
+    //
+    TONE(32)
+    PITCH(Ab5) SLEEP(8)
+    TONE(24)  SLEEP(4)
+    PITCH(A5) SLEEP(4)
+    PITCH(B5) SLEEP(4) SILENCE(4)
+
+    //
+    TONE(32)
+    PITCH(A5)  SLEEP(12) SILENCE(4) TONE(32)
+    PITCH(A5) SLEEP(12) SILENCE(4)
+    TONE(24)                      
+    PITCH(C5) SLEEP(4) SILENCE(4) TONE(24)
+    PITCH(C5) SLEEP(4) SILENCE(4)
+    //
+    TONE(32)
+    PITCH(G5)  SLEEP(8)
+    TONE(24)   SLEEP(4)
+    PITCH(F5)  SLEEP(4)
+    PITCH(E5)  SLEEP(4) SILENCE(4)
+    //
+    TONE(32)
+    PITCH(Gb5) SLEEP(8)
+    TONE(24)   SLEEP(4)
+    PITCH(G5)  SLEEP(4)
+    PITCH(A5)  SLEEP(4) SILENCE(4)
+    //
+    TONE(32)
+    PITCH(G5)  SLEEP(12) SILENCE(4) TONE(32)
+    PITCH(G5) SLEEP(12) SILENCE(4)
+};
+uint16_t sequenceTrebleLength = sizeof(sequenceTreble) / sizeof(sequenceTreble[0]);
+uint16_t sequenceBass[] =
+{
+    TEMPO(64)
+    INSTRUMENT(SQUARE)
+    TONE(2)
+    PITCH(B3) SLEEP(4) SILENCE(4) TONE(2)
+    PITCH(B3) SLEEP(4) SILENCE(4) 
+    //
+    TONE(3)
+    PITCH(C4) SLEEP(8)
+    TONE(2)   SLEEP(4)
+    PITCH(D4) SLEEP(2) SILENCE(2) TONE(2)
+    PITCH(E4) SLEEP(4) SILENCE(4)
+    //
+    TONE(3)
+    PITCH(D4) SLEEP(8)
+    TONE(2)   SLEEP(8)
+    PITCH(A3) SLEEP(4) SILENCE(4)
+    //
+    TONE(3)
+    PITCH(D4) SLEEP(12) SILENCE(4) TONE(3)
+    PITCH(D4) SLEEP(12) SILENCE(4)
+    TONE(2)
+    PITCH(E4) SLEEP(4) SILENCE(4) TONE(2)
+    PITCH(E4) SLEEP(4) SILENCE(4)
+    //
+    TONE(3)
+    PITCH(F4) SLEEP(8)
+    TONE(2)   SLEEP(4)
+    PITCH(G4) SLEEP(2) SILENCE(2) TONE(2)
+    PITCH(A4) SLEEP(4) SILENCE(4)
+    //
+    TONE(3)
+    PITCH(G4) SLEEP(8)
+    TONE(2)   SLEEP(8)
+    PITCH(G3) SLEEP(4) SILENCE(4)
+    //
+    TONE(3)
+    PITCH(C4) SLEEP(12) SILENCE(4) TONE(3)
+    PITCH(C4) SLEEP(12) SILENCE(4)
+    TONE(2)
+    PITCH(G4) SLEEP(4) SILENCE(4) TONE(2)
+    PITCH(G4) SLEEP(4) SILENCE(4)
+    //
+    TONE(3)
+    PITCH(F4) SLEEP(8)
+    TONE(2)   SLEEP(4)
+    PITCH(E4) SLEEP(2) SILENCE(2) TONE(2)
+    PITCH(D4) SLEEP(4) SILENCE(4)
+    //
+    TONE(3)
+    PITCH(E4) SLEEP(8)
+    TONE(2)   SLEEP(8)
+    PITCH(E3) SLEEP(4) SILENCE(4)
+    //
+    TONE(3)
+    PITCH(A3) SLEEP(12) SILENCE(4) TONE(3)
+    PITCH(A3) SLEEP(12) SILENCE(4)
+    TONE(2)
+    PITCH(F4) SLEEP(4) SILENCE(4) TONE(2)
+    PITCH(F4) SLEEP(4) SILENCE(4)
+    //
+    TONE(3)
+    PITCH(E4) SLEEP(8)
+    TONE(2)   SLEEP(4)
+    PITCH(D4) SLEEP(2) SILENCE(2) TONE(2)
+    PITCH(C4) SLEEP(4) SILENCE(4)
+    //
+    TONE(3)
+    PITCH(D4) SLEEP(8)
+    TONE(2)   SLEEP(8)
+    PITCH(D4) SLEEP(4) SILENCE(4)
+    //
+    TONE(3)
+    PITCH(G4) SLEEP(12) SILENCE(4) TONE(3)
+    PITCH(G4) SLEEP(12) SILENCE(4)
+};
+uint16_t sequenceBassLength = sizeof(sequenceBass) / sizeof(sequenceBass[0]);

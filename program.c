@@ -1,32 +1,17 @@
 #include <avr/io.h>
 #include <util/delay.h>
-#include <math.h>
 #include <stdlib.h>
 #include "common.c"
 #include "notes.c"
-//#include "bach.c"
-#include "lostelf.c"
-//#include "testnotation.c"
-
-#define SIN_LENGTH 640
+//#include "music/bach.c"
+//#include "music/lostelf.c"
+//#include "music/testnotation.c"
+#include "music/viricorda.c"
 
 static uint64_t sleepUnit = 512;
 static uint64_t rhythmUnit = 256;
-static const uint16_t sinLength = SIN_LENGTH;
-int8_t sinArr[SIN_LENGTH] = {0};
 
 #define SLEEP_DELAY _delay_us(sleepUnit);
-
-static void initializeSinArray()
-{
-    double value = 0.5;
-
-    for (int i = 0; i < sinLength; i++)
-    {
-        sinArr[i] = (int8_t)(sin(value) * 10);
-        value += 1.0 / sinLength;
-    }
-}
 
 static void instSilence(channel *channel)
 {
@@ -62,49 +47,9 @@ static void instRegular(channel *channel)
     }
 }
 
-static void instSine(channel *channel)
-{
-    static const int8_t waveThreshold = 4;
-    static int8_t waveCounter = 0;
-    static uint16_t wavePosition = 0;
-    static int8_t waveDirection = 1;
-
-    VLA_Write(channel->currentTone, &channel->device->width);
-    VLA_Write((channel->currentPitches[(channel->nextPitchIndex)]
-                *sinArr[wavePosition]) / 10, &channel->device->pitch);
-
-    waveCounter++;
-
-    if (waveCounter >= waveThreshold)
-    {
-        waveCounter = 0;
-        wavePosition += waveDirection;
-
-        if (wavePosition >= sinLength || wavePosition <= 0)
-        {
-            waveDirection *= -1;
-        }
-    }
-
-    channel->polyCycleCounter++;
-
-    if (channel->polyCycleCounter >= channel->polyCycleThreshold)
-    {
-        channel->polyCycleCounter = 0;
-        if (channel->nextPitchIndex < channel->currentPitchCount-1)
-        {
-            channel->nextPitchIndex++;
-        }
-        else if (channel->nextPitchIndex == channel->currentPitchCount-1)
-        {
-            channel->nextPitchIndex = 0;
-        }
-    }
-}
-
 const instrument instruments[] =
 {
-    instSilence, instRegular, instSine
+    instSilence, instRegular
 };
 static void readTrack(track *target)
 {
@@ -119,9 +64,9 @@ static void readTrack(track *target)
         target->sPosition = 0;
     }
 
-    uint32_t code = target->sequence[target->sPosition];
+    uint16_t code = target->sequence[target->sPosition];
     uint16_t position = target->sPosition;
-    uint32_t *tSequence = target->sequence;
+    uint16_t *tSequence = target->sequence;
     channel *tChannel = target->channel;
 
     switch (code) 
@@ -133,48 +78,17 @@ static void readTrack(track *target)
             target->sPosition = position+2;
             break;
         case 1:
-            // Set 1 pitch
-            tChannel->currentPitchCount=1;
-            tChannel->currentPitches[0] =
-                tSequence[position+1];
-            tChannel->nextPitchIndex = 0;
-            target->sPosition = position+2;
-            break;
         case 2:
-            // Set 2 pitches
-            tChannel->currentPitchCount=2;
-            tChannel->currentPitches[0] =
-                tSequence[position+1];
-            tChannel->currentPitches[1] =
-                tSequence[position+2];
-            tChannel->nextPitchIndex = 0;
-            target->sPosition = position+3;
-            break;
         case 3:
-            // Set 3 pitches
-            tChannel->currentPitchCount=3;
-            tChannel->currentPitches[0] =
-                tSequence[position+1];
-            tChannel->currentPitches[1] =
-                tSequence[position+2];
-            tChannel->currentPitches[2] =
-                target->sequence[position+3];
-            tChannel->nextPitchIndex = 0;
-            target->sPosition = position+4;
-            break;
         case 4:
-            // Set 4 pitches
-            tChannel->currentPitchCount=4;
-            tChannel->currentPitches[0] =
-                tSequence[position+1];
-            tChannel->currentPitches[1] =
-                tSequence[position+2];
-            tChannel->currentPitches[2] =
-                tSequence[position+3];
-            tChannel->currentPitches[3] =
-                tSequence[position+4];
+            // Set pitches
+            tChannel->currentPitchCount=code;
+            for (int i = 0; i < tChannel->currentPitchCount; i++)
+            {
+                tChannel->currentPitches[i] = tSequence[position+i+1];
+            }
             tChannel->nextPitchIndex = 0;
-            target->sPosition = position+5;
+            target->sPosition = position+code+1;
             break;
         case 5:
             // Set "tone" (voltage)
@@ -208,13 +122,13 @@ static void readTrack(track *target)
             }
             break;
         default:
-            for (int i = 0; i < code; i++)
+            /*for (int i = 0; i < code; i++)
             {
                 SET_BIT(PORTB, 5);
                 _delay_ms(500);
                 UNSET_BIT(PORTB, 5);
                 _delay_ms(500);
-            }
+            }*/
         break;
     }
 }
@@ -291,62 +205,48 @@ static device* initializeDevices(void)
     return devices;
 }
 
+static void initializeChannel(channel *channel, device *device)
+{
+    channel->device = device;
+    channel->currentTone = 0;
+    for(int i = 0; i < 4; i++)
+    {
+        channel->currentPitches[i] = 255;
+    }
+    channel->currentPitchCount = 0;
+    channel->nextPitchIndex = 0;
+    channel->polyCycleThreshold = 96;
+    channel->polyCycleCounter = 0;
+    channel->instrument = instruments[0];
+}
+
 static channel* initializeChannels(device *devices)
 {
     channel *channels = malloc(sizeof(channel)*2);
-
-    channels[0].device = &devices[0];
-    channels[0].currentTone = 0;
-    channels[0].currentPitches[0] = 255;
-    channels[0].currentPitches[1] = 255;
-    channels[0].currentPitches[2] = 255;
-    channels[0].currentPitches[3] = 255;
-    channels[0].currentPitchCount = 0;
-    channels[0].nextPitchIndex = 0;
-    channels[0].polyCycleThreshold = 96;
-    channels[0].polyCycleCounter = 0;
-    channels[0].instrument = instruments[0];
-
-    channels[1].device = &devices[1];
-    channels[1].currentTone = 0;
-    channels[1].currentPitches[0] = 255;
-    channels[1].currentPitches[1] = 255;
-    channels[1].currentPitches[2] = 255;
-    channels[1].currentPitches[3] = 255;
-    channels[1].currentPitchCount = 0;
-    channels[1].nextPitchIndex = 0;
-    channels[1].polyCycleThreshold = 96;
-    channels[1].polyCycleCounter = 0;
-    channels[1].instrument = instruments[0];
-
+    initializeChannel(&channels[0], &devices[0]);
+    initializeChannel(&channels[1], &devices[1]);
     return channels;
 }
 
+static void initializeTrack(track *track, channel *channel, uint16_t *sequence, uint16_t sequenceLength)
+{
+    track->channel = channel;
+    track->sequence = sequence;
+    track->sLength = sequenceLength;
+    track->sPosition = 0;
+    track->remainingSleepTime = 0;
+    track->jPosition = 0;
+}
 static track* initializeTracks(channel* channels)
 {
     track *tracks = malloc(sizeof(track)*2);
-
-    tracks[0].channel = &channels[0];
-    tracks[0].sequence = sequenceBass;
-    tracks[0].sLength = sizeof(sequenceBass) / sizeof(sequenceBass[0]);
-    tracks[0].sPosition = 0;
-    tracks[0].remainingSleepTime = 0;
-    tracks[0].jPosition = 0;
-
-    tracks[1].channel = &channels[1];
-    tracks[1].sequence = sequenceTreble;
-    tracks[1].sLength = sizeof(sequenceTreble) / sizeof(sequenceTreble[0]);
-    tracks[1].sPosition = 0;
-    tracks[1].remainingSleepTime = 0;
-    tracks[1].jPosition = 0;
-
+    initializeTrack(&tracks[0], &channels[0], sequenceBass, sequenceBassLength);
+    initializeTrack(&tracks[1], &channels[1], sequenceTreble, sequenceTrebleLength);
     return tracks;
 }
 
 int main(void)
 {
-    initializeSinArray();
-
     initializePortB();
     initializePortD();
 
@@ -365,14 +265,16 @@ int main(void)
     // initialize the tracks - parallel streams of commands to the channels
     track *tracks = initializeTracks(channels);
 
-    SLEEP_DELAY
-
     for(;;)
     {
-        readTrack(&tracks[0]);
-        readTrack(&tracks[1]);
-        channels[0].instrument(&channels[0]);
-        channels[1].instrument(&channels[1]);
+        for (int i = 0; i < 2; i++)
+        {
+            readTrack(&tracks[i]);
+        }
+        for (int i = 0; i < 2; i++)
+        {
+            channels[i].instrument(&channels[i]);
+        }
         SLEEP_DELAY
     }
 }
