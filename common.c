@@ -86,3 +86,14 @@ typedef struct track
 } track;
 
 typedef void(*instrument)(channel *channel);
+
+typedef struct composition
+{
+    uint8_t numDevices;
+    uint8_t numChannels;
+    uint8_t numTracks;
+
+    device *devices;
+    channel *channels;
+    track *tracks;
+} composition;

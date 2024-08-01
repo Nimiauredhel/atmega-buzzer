@@ -51,17 +51,137 @@ const instrument instruments[] =
     instSilence, instRegular
 };
 
+// timer counter 0
+static  void initializeTimerCounter0(void)
+{
+    TCCR0A = (1 << COM0A1) | (1 << COM0B1) | (1 << WGM00);
+    TCCR0B = (1 << WGM02); 
+}
+static void timerCounter0Start(void)
+{
+    // 1 0 0 - clk/256
+    //SET_BIT(TCCR0B, CS00);
+    //SET_BIT(TCCR0B, CS01);
+    SET_BIT(TCCR0B, CS02);
+}
+static void timerCounter0Stop(void)
+{
+    //UNSET_BIT(TCCR0B, CS00);
+    //UNSET_BIT(TCCR0B, CS01);
+    UNSET_BIT(TCCR0B, CS02);
+}
+// timer counter 1
+static  void initializeTimerCounter1(void)
+{
+    TCCR1A = (1 << COM1A1) | (1 << COM1B1) | (1 << WGM10);
+    TCCR1B = (1 << WGM13); 
+}
+static void timerCounter1Start(void)
+{
+    // 1 0 0 - clk/256
+    //SET_BIT(TCCR1B, CS10);
+    //SET_BIT(TCCR1B, CS11);
+    SET_BIT(TCCR1B, CS12);
+}
+static void timerCounter1Stop(void)
+{
+    //UNSET_BIT(TCCR1B, CS10);
+    //UNSET_BIT(TCCR1B, CS11);
+    UNSET_BIT(TCCR1B, CS12);
+}
+
+static void initializePortB(void)
+{
+    DDRB = 0;
+    SET_BIT(DDRB, DDB1);
+    SET_BIT(DDRB, DDB2);
+    SET_BIT(DDRB, DDB5);
+}
+
+static void initializePortD(void)
+{
+    DDRD = 0;
+    SET_BIT(DDRD, DDD5);
+    SET_BIT(DDRD, DDD6);
+}
+
+static void initializeDevice8(device *device, volatile uint8_t *pitch, volatile uint8_t *width)
+{
+    device->pitch.addressLength = 8;
+    device->width.addressLength = 8;
+    device->pitch.address.eight = pitch;
+    device->width.address.eight = width;
+}
+
+static void initializeDevice16(device *device, volatile uint16_t *pitch, volatile uint16_t *width)
+{
+    device->pitch.addressLength = 16;
+    device->width.addressLength = 16;
+    device->pitch.address.sixteen = pitch;
+    device->width.address.sixteen = width;
+}
+
+static device* initializeDevices(uint8_t *numDevices)
+{
+    *numDevices = 2;
+    device *devices = malloc((*numDevices) * sizeof(device));
+
+    // timer counter 0
+    initializeDevice8(&devices[0], &OCR0A, &OCR0B);
+    // timer counter 1
+    initializeDevice16(&devices[1], &OCR1A, &OCR1B);
+
+    return devices;
+}
+
+static void initializeChannel(channel *channel, device *device)
+{
+    channel->device = device;
+    channel->currentTone = 0;
+    for(int i = 0; i < 4; i++)
+    {
+        channel->currentPitches[i] = 255;
+    }
+    channel->currentPitchCount = 0;
+    channel->nextPitchIndex = 0;
+    channel->polyCycleThreshold = 96;
+    channel->polyCycleCounter = 0;
+    channel->instrument = instruments[0];
+}
+
+static channel* initializeChannels(uint8_t *numChannels, device *devices)
+{
+    *numChannels = 2;
+    channel *channels = malloc((*numChannels) * sizeof(channel));
+    initializeChannel(&channels[0], &devices[0]);
+    initializeChannel(&channels[1], &devices[1]);
+    return channels;
+}
+
+static void initializeTrack(track *track, channel *channel, uint8_t *sequence, uint16_t sequenceLength)
+{
+    track->channel = channel;
+    track->sequence = sequence;
+    track->sLength = sequenceLength;
+    track->sPosition = 0;
+    track->remainingSleepTime = 0;
+    track->jPosition = 0;
+}
+static track* initializeTracks(uint8_t *numTracks, channel* channels)
+{
+    *numTracks = 2;
+    track *tracks = malloc((*numTracks) * sizeof(track));
+    initializeTrack(&tracks[0], &channels[0], sequenceBass, sequenceBassLength);
+    initializeTrack(&tracks[1], &channels[1], sequenceTreble, sequenceTrebleLength);
+    return tracks;
+}
+
 static void readTrack(track *target)
 {
     if (target->remainingSleepTime > 0)
     {
         target->remainingSleepTime-=sleepUnit;
         return;
-    }
-
-    if (target->sPosition >= target->sLength-1)
-    {
-        target->sPosition = 0;
     }
 
     uint16_t code = target->sequence[target->sPosition];
@@ -136,130 +256,44 @@ static void readTrack(track *target)
     }
 }
 
-// timer counter 0
-static  void initializeTimerCounter0(void)
+void readTracks(uint8_t numTracks, track *tracks)
 {
-    TCCR0A = (1 << COM0A1) | (1 << COM0B1) | (1 << WGM00);
-    TCCR0B = (1 << WGM02); 
-}
-static void timerCounter0Start(void)
-{
-    // 1 0 0 - clk/256
-    //SET_BIT(TCCR0B, CS00);
-    //SET_BIT(TCCR0B, CS01);
-    SET_BIT(TCCR0B, CS02);
-}
-static void timerCounter0Stop(void)
-{
-    //UNSET_BIT(TCCR0B, CS00);
-    //UNSET_BIT(TCCR0B, CS01);
-    UNSET_BIT(TCCR0B, CS02);
-}
-// timer counter 1
-static  void initializeTimerCounter1(void)
-{
-    TCCR1A = (1 << COM1A1) | (1 << COM1B1) | (1 << WGM10);
-    TCCR1B = (1 << WGM13); 
-}
-static void timerCounter1Start(void)
-{
-    // 1 0 0 - clk/256
-    //SET_BIT(TCCR1B, CS10);
-    //SET_BIT(TCCR1B, CS11);
-    SET_BIT(TCCR1B, CS12);
-}
-static void timerCounter1Stop(void)
-{
-    //UNSET_BIT(TCCR1B, CS10);
-    //UNSET_BIT(TCCR1B, CS11);
-    UNSET_BIT(TCCR1B, CS12);
-}
-
-static void initializePortB(void)
-{
-    DDRB = 0;
-    SET_BIT(DDRB, DDB1);
-    SET_BIT(DDRB, DDB2);
-    SET_BIT(DDRB, DDB5);
-}
-
-static void initializePortD(void)
-{
-    DDRD = 0;
-    SET_BIT(DDRD, DDD5);
-    SET_BIT(DDRD, DDD6);
-}
-
-static void initializeDevice8(device *device, volatile uint8_t *pitch, volatile uint8_t *width)
-{
-    device->pitch.addressLength = 8;
-    device->width.addressLength = 8;
-    device->pitch.address.eight = pitch;
-    device->width.address.eight = width;
-}
-
-static void initializeDevice16(device *device, volatile uint16_t *pitch, volatile uint16_t *width)
-{
-    device->pitch.addressLength = 16;
-    device->width.addressLength = 16;
-    device->pitch.address.sixteen = pitch;
-    device->width.address.sixteen = width;
-}
-
-static device* initializeDevices(void)
-{
-    device *devices = malloc(sizeof(device)*2);
-
-    // timer counter 0
-    initializeDevice8(&devices[0], &OCR0A, &OCR0B);
-    // timer counter 1
-    initializeDevice16(&devices[1], &OCR1A, &OCR1B);
-
-    return devices;
-}
-
-static void initializeChannel(channel *channel, device *device)
-{
-    channel->device = device;
-    channel->currentTone = 0;
-    for(int i = 0; i < 4; i++)
+    // check if it's time to loop
+    // and manually resync tracks
+    for (int i = 0; i < numTracks; i++)
     {
-        channel->currentPitches[i] = 255;
+        if (tracks[i].sPosition >= tracks[i].sLength-1)
+        {
+            // if true for ONE, sync ALL then continue!
+            for(int j = 0; j < numTracks; j++)
+            {
+                tracks[j].sPosition = 0;
+                tracks[j].jPosition = 0;
+                tracks[j].remainingSleepTime = 0;
+            }
+            break;
+        }
     }
-    channel->currentPitchCount = 0;
-    channel->nextPitchIndex = 0;
-    channel->polyCycleThreshold = 96;
-    channel->polyCycleCounter = 0;
-    channel->instrument = instruments[0];
+    
+    // proceed to execute track commands
+    for (int i = 0; i < numTracks; i++)
+    {
+        readTrack(&tracks[i]);
+    }
 }
 
-static channel* initializeChannels(device *devices)
+void playChannels(uint8_t numChannels, channel *channels)
 {
-    channel *channels = malloc(sizeof(channel)*2);
-    initializeChannel(&channels[0], &devices[0]);
-    initializeChannel(&channels[1], &devices[1]);
-    return channels;
-}
-
-static void initializeTrack(track *track, channel *channel, uint8_t *sequence, uint16_t sequenceLength)
-{
-    track->channel = channel;
-    track->sequence = sequence;
-    track->sLength = sequenceLength;
-    track->sPosition = 0;
-    track->remainingSleepTime = 0;
-    track->jPosition = 0;
-}
-static track* initializeTracks(channel* channels)
-{
-    track *tracks = malloc(sizeof(track)*2);
-    initializeTrack(&tracks[0], &channels[0], sequenceBass, sequenceBassLength);
-    initializeTrack(&tracks[1], &channels[1], sequenceTreble, sequenceTrebleLength);
-    return tracks;
+    for (int i = 0; i < numChannels; i++)
+    {
+        channels[i].instrument(&channels[i]);
+    }
 }
 
 int main(void)
 {
+    composition comp = {0};
+
     initializePortB();
     initializePortD();
 
@@ -272,22 +306,16 @@ int main(void)
     UNSET_BIT(PORTB, 5);
 
     // initialize the devices - interfaces to audio emitting hardware
-    device *devices = initializeDevices();
+    comp.devices = initializeDevices(&comp.numDevices);
     // initialize the channels - device usage & state management
-    channel *channels = initializeChannels(devices);
+    comp.channels = initializeChannels(&comp.numChannels, comp.devices);
     // initialize the tracks - parallel streams of commands to the channels
-    track *tracks = initializeTracks(channels);
+    comp.tracks = initializeTracks(&comp.numTracks, comp.channels);
 
     for(;;)
     {
-        for (int i = 0; i < 2; i++)
-        {
-            readTrack(&tracks[i]);
-        }
-        for (int i = 0; i < 2; i++)
-        {
-            channels[i].instrument(&channels[i]);
-        }
+        readTracks(comp.numTracks, comp.tracks);
+        playChannels(comp.numChannels, comp.channels);
         SLEEP_DELAY
     }
 }
