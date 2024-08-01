@@ -9,13 +9,12 @@
 #include "music/viricorda.c"
 
 static uint64_t sleepUnit = 512;
-static uint64_t rhythmUnit = 256;
+static uint8_t rhythmUnit = 255; // also set dynamically by tracks
 
 #define SLEEP_DELAY _delay_us(sleepUnit);
 
 static void instSilence(channel *channel)
 {
-
 }
 
 static void instRegular(channel *channel)
@@ -51,6 +50,7 @@ const instrument instruments[] =
 {
     instSilence, instRegular
 };
+
 static void readTrack(track *target)
 {
     if (target->remainingSleepTime > 0)
@@ -66,7 +66,7 @@ static void readTrack(track *target)
 
     uint16_t code = target->sequence[target->sPosition];
     uint16_t position = target->sPosition;
-    uint16_t *tSequence = target->sequence;
+    uint8_t *tSequence = target->sequence;
     channel *tChannel = target->channel;
 
     switch (code) 
@@ -74,7 +74,7 @@ static void readTrack(track *target)
         case 0:
             // sleep for duration
             target->remainingSleepTime =
-                tSequence[position+1]*rhythmUnit*sleepUnit;
+                tSequence[position+1] * sleepUnit * rhythmUnit;
             target->sPosition = position+2;
             break;
         case 1:
@@ -82,13 +82,16 @@ static void readTrack(track *target)
         case 3:
         case 4:
             // Set pitches
-            tChannel->currentPitchCount=code;
-            for (int i = 0; i < tChannel->currentPitchCount; i++)
+            // pitches + sleep combo to save space
+            target->remainingSleepTime =
+                tSequence[position+code+1] * sleepUnit * rhythmUnit;
+            tChannel->currentPitchCount = code;
+            target->sPosition = position + code + 2;
+            for (int i = 0; i < code; i++)
             {
                 tChannel->currentPitches[i] = tSequence[position+i+1];
             }
             tChannel->nextPitchIndex = 0;
-            target->sPosition = position+code+1;
             break;
         case 5:
             // Set "tone" (voltage)
@@ -187,20 +190,30 @@ static void initializePortD(void)
     SET_BIT(DDRD, DDD6);
 }
 
+static void initializeDevice8(device *device, volatile uint8_t *pitch, volatile uint8_t *width)
+{
+    device->pitch.addressLength = 8;
+    device->width.addressLength = 8;
+    device->pitch.address.eight = pitch;
+    device->width.address.eight = width;
+}
+
+static void initializeDevice16(device *device, volatile uint16_t *pitch, volatile uint16_t *width)
+{
+    device->pitch.addressLength = 16;
+    device->width.addressLength = 16;
+    device->pitch.address.sixteen = pitch;
+    device->width.address.sixteen = width;
+}
+
 static device* initializeDevices(void)
 {
     device *devices = malloc(sizeof(device)*2);
 
     // timer counter 0
-    devices[0].pitch.addressLength = 8;
-    devices[0].pitch.address.eight = &OCR0A;
-    devices[0].width.addressLength = 8;
-    devices[0].width.address.eight = &OCR0B;
+    initializeDevice8(&devices[0], &OCR0A, &OCR0B);
     // timer counter 1
-    devices[1].pitch.addressLength = 16;
-    devices[1].pitch.address.sixteen = &OCR1A;
-    devices[1].width.addressLength = 16;
-    devices[1].width.address.sixteen = &OCR1B;
+    initializeDevice16(&devices[1], &OCR1A, &OCR1B);
 
     return devices;
 }
@@ -228,7 +241,7 @@ static channel* initializeChannels(device *devices)
     return channels;
 }
 
-static void initializeTrack(track *track, channel *channel, uint16_t *sequence, uint16_t sequenceLength)
+static void initializeTrack(track *track, channel *channel, uint8_t *sequence, uint16_t sequenceLength)
 {
     track->channel = channel;
     track->sequence = sequence;
