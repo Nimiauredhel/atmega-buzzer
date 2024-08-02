@@ -13,11 +13,11 @@ static uint8_t rhythmUnit = 255; // also set dynamically by tracks
 
 #define SLEEP_DELAY _delay_us(sleepUnit);
 
-static void instSilence(channel *channel)
+static void instSilence(channel *channel, state *state)
 {
 }
 
-static void instRegular(channel *channel)
+static void instRegular(channel *channel, state *state)
 {
     if (channel->currentPitchCount == 0) return;
 
@@ -26,8 +26,9 @@ static void instRegular(channel *channel)
         channel->nextPitchIndex = 0;
     }
 
-    VLA_Write(channel->currentTone, &channel->device->width);
-    VLA_Write(channel->currentPitches[channel->nextPitchIndex], 
+    uint8_t finalTone = (channel->currentTone*state->volume)/255;
+    VSP_Write(finalTone, &channel->device->width);
+    VSP_Write(channel->currentPitches[channel->nextPitchIndex], 
             &channel->device->pitch);
 
     channel->polyCycleCounter++;
@@ -105,20 +106,41 @@ static void initializePortD(void)
     SET_BIT(DDRD, DDD6);
 }
 
+static void initializeAnalogInput(void)
+{
+    ADMUX = 0;
+    ADCSRA = 0;
+    // reference voltage is vcc (5v?), 8 bit mode, using pin A0
+    ADMUX |= (1 << REFS0) | (1 << ADLAR);
+    // enable ADC module, set prescaler divisor value to 128
+    ADCSRA |= (1 << ADEN) | (1 << ADPS0) | (1 << ADPS1) | (1 << ADPS2);
+}
+
+static uint8_t readAnalogInput()
+{
+    SET_BIT(ADCSRA, ADSC);
+
+    while (GET_BIT(ADCSRA, ADSC) == 1)
+    {
+        _delay_us(10);
+    }
+
+    return ADCH;
+}
 static void initializeDevice8(device *device, volatile uint8_t *pitch, volatile uint8_t *width)
 {
-    device->pitch.addressLength = 8;
-    device->width.addressLength = 8;
-    device->pitch.address.eight = pitch;
-    device->width.address.eight = width;
+    device->pitch.pointerSize = 8;
+    device->width.pointerSize = 8;
+    device->pitch.pointer.eight = pitch;
+    device->width.pointer.eight = width;
 }
 
 static void initializeDevice16(device *device, volatile uint16_t *pitch, volatile uint16_t *width)
 {
-    device->pitch.addressLength = 16;
-    device->width.addressLength = 16;
-    device->pitch.address.sixteen = pitch;
-    device->width.address.sixteen = width;
+    device->pitch.pointerSize = 16;
+    device->width.pointerSize = 16;
+    device->pitch.pointer.sixteen = pitch;
+    device->width.pointer.sixteen = width;
 }
 
 static device* initializeDevices(uint8_t *numDevices)
@@ -282,40 +304,43 @@ void readTracks(uint8_t numTracks, track *tracks)
     }
 }
 
-void playChannels(uint8_t numChannels, channel *channels)
+void playChannels(uint8_t numChannels, channel *channels, state *state)
 {
     for (int i = 0; i < numChannels; i++)
     {
-        channels[i].instrument(&channels[i]);
+        channels[i].instrument(&channels[i], state);
     }
 }
 
 int main(void)
 {
-    composition comp = {0};
+    state *state = malloc(sizeof(struct state));
+    composition *composition = malloc(sizeof(struct composition));
 
     initializePortB();
     initializePortD();
-
+    initializeAnalogInput();
     initializeTimerCounter0();
     initializeTimerCounter1();
+
     timerCounter0Start();
     timerCounter1Start();
 
     // turn off built-in led - to use for debugging later
-    UNSET_BIT(PORTB, 5);
+    BUILTIN_LED_OFF;
 
     // initialize the devices - interfaces to audio emitting hardware
-    comp.devices = initializeDevices(&comp.numDevices);
+    composition->devices = initializeDevices(&composition->numDevices);
     // initialize the channels - device usage & state management
-    comp.channels = initializeChannels(&comp.numChannels, comp.devices);
+    composition->channels = initializeChannels(&composition->numChannels, composition->devices);
     // initialize the tracks - parallel streams of commands to the channels
-    comp.tracks = initializeTracks(&comp.numTracks, comp.channels);
+    composition->tracks = initializeTracks(&composition->numTracks, composition->channels);
 
     for(;;)
     {
-        readTracks(comp.numTracks, comp.tracks);
-        playChannels(comp.numChannels, comp.channels);
+        state->volume = readAnalogInput();
+        readTracks(composition->numTracks, composition->tracks);
+        playChannels(composition->numChannels, composition->channels, state);
         SLEEP_DELAY
     }
 }

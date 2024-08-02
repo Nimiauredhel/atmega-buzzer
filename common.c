@@ -3,42 +3,49 @@
 #define GET_BIT(REG, BIT) (REG & (1 << BIT))
 #define SET_BIT(REG, BIT) (REG |= (1 << BIT))
 #define UNSET_BIT(REG, BIT) (REG &= ~(1 << BIT))
+#define BUILTIN_LED_ON SET_BIT(PORTB, 5)
+#define BUILTIN_LED_OFF UNSET_BIT(PORTB, 5)
 
-typedef struct variableLengthAddress
+typedef struct state
 {
-    uint8_t addressLength;
-    union address
+    uint8_t volume;
+} state;
+
+typedef struct variableSizePointer
+{
+    uint8_t pointerSize;
+    union pointer
     {
         volatile uint8_t *eight;
         volatile uint16_t *sixteen;
-    } address;
-} variableLengthAddress;
+    } pointer;
+} variableSizePointer;
 
-uint16_t VLA_Read(variableLengthAddress *target)
+uint16_t VSP_Read(variableSizePointer *target)
 {
-    switch (target->addressLength)
+    switch (target->pointerSize)
     {
         case 8:
-            return *target->address.eight;
+            return *target->pointer.eight;
             break;
         case 16:
-            return *target->address.sixteen;
+            return *target->pointer.sixteen;
             break;
         default:
-            return *target->address.eight;
+            return *target->pointer.eight;
             break;
     }
 }
 
-void VLA_Write(uint16_t value, variableLengthAddress *target)
+void VSP_Write(uint16_t value, variableSizePointer *target)
 {
-    switch (target->addressLength)
+    switch (target->pointerSize)
     {
         case 8:
-            *target->address.eight = value;
+            *target->pointer.eight = value;
             break;
         case 16:
-            *target->address.sixteen = value;
+            *target->pointer.sixteen = value;
             break;
         default:
             break;
@@ -47,8 +54,8 @@ void VLA_Write(uint16_t value, variableLengthAddress *target)
 
 typedef struct device
 {
-    variableLengthAddress pitch;
-    variableLengthAddress width;
+    variableSizePointer pitch;
+    variableSizePointer width;
 
 } device;
 
@@ -66,7 +73,7 @@ typedef struct channel
     uint8_t polyCycleThreshold;
     uint8_t polyCycleCounter;
     // the "instrument" function assigned to this channel, controlling the waveform etc.
-    void (*instrument)(struct channel *ch);
+    void (*instrument)(struct channel *channel, state *state);
 } channel;
 
 typedef struct track
@@ -85,7 +92,7 @@ typedef struct track
     uint64_t remainingSleepTime;
 } track;
 
-typedef void(*instrument)(channel *channel);
+typedef void(*instrument)(channel *channel, state *state);
 
 typedef struct composition
 {
