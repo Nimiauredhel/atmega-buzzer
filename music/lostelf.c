@@ -8,8 +8,8 @@
 // following elements are the function parameters
 
 #define SLEEP(x) 0, x,
-#define TONE(x) 5, x,
-#define SILENCE(x) TONE(0) SLEEP(x)
+#define VOLUME(x) 5, x,
+#define SILENCE(x) VOLUME(0) SLEEP(x)
 #define PITCH(x) 1, x,
 #define PITCH2(x, y) 2, x, y,
 #define PITCH3(x, y, z) 3, x, y, z,
@@ -27,7 +27,7 @@ uint32_t sequenceTreble[] =
     TEMPO(256)
                     INSTRUMENT(SQUARE)
                     //
-            TONE(32)
+            VOLUME(32)
     PITCH3(F4, Ab4, C5)
                             SLEEP(18)
     PITCH3(G4, Bb5, D5)
@@ -99,7 +99,7 @@ uint32_t sequenceBass[] =
     TEMPO(256)
                     INSTRUMENT(SQUARE)
 //
-            TONE(1)
+            VOLUME(1)
     PITCH(C3)
                             SLEEP(18)
     PITCH(D3)

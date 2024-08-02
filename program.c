@@ -26,7 +26,7 @@ static void instRegular(channel *channel, state *state)
         channel->nextPitchIndex = 0;
     }
 
-    uint8_t finalTone = (channel->currentTone*state->volume)/255;
+    uint8_t finalTone = (channel->currentTone*state->volume)/1023;
     VSP_Write(finalTone, &channel->device->width);
     VSP_Write(channel->currentPitches[channel->nextPitchIndex], 
             &channel->device->pitch);
@@ -110,8 +110,8 @@ static void initializeAnalogInput(void)
 {
     ADMUX = 0;
     ADCSRA = 0;
-    // reference voltage is vcc (5v?), 8 bit mode, using pin A0
-    ADMUX |= (1 << REFS0) | (1 << ADLAR);
+    // reference voltage is vcc (5v?), 10 bit mode, using pin A0
+    ADMUX |= (1 << REFS0) | (0 << ADLAR);
     // enable ADC module, set prescaler divisor value to 128
     ADCSRA |= (1 << ADEN) | (1 << ADPS0) | (1 << ADPS1) | (1 << ADPS2);
 }
@@ -125,7 +125,7 @@ static uint8_t readAnalogInput()
         _delay_us(10);
     }
 
-    return ADCH;
+    return ADC;
 }
 static void initializeDevice8(device *device, volatile uint8_t *pitch, volatile uint8_t *width)
 {
@@ -284,7 +284,8 @@ void readTracks(uint8_t numTracks, track *tracks)
     // and manually resync tracks
     for (int i = 0; i < numTracks; i++)
     {
-        if (tracks[i].sPosition >= tracks[i].sLength-1)
+        if (tracks[i].sPosition >= tracks[i].sLength-1
+            && tracks[i].remainingSleepTime >= 0)
         {
             // if true for ONE, sync ALL then continue!
             for(int j = 0; j < numTracks; j++)

@@ -8,7 +8,7 @@
 
 typedef struct state
 {
-    uint8_t volume;
+    uint16_t volume;
 } state;
 
 typedef struct variableSizePointer
