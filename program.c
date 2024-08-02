@@ -90,18 +90,39 @@ static void timerCounter1Stop(void)
     //UNSET_BIT(TCCR1B, CS11);
     UNSET_BIT(TCCR1B, CS12);
 }
+// timer counter 2
+static void initializeTimerCounter2(void)
+{
+    TCCR2A = (1 << COM2A1) | (1 << COM2B1) | (1 << WGM20);
+    TCCR2B = (1 << WGM22); 
+}
+static void timerCounter2Start(void)
+{
+    // 1 0 0 - clk/256
+    //SET_BIT(TCCR2B, CS20);
+    SET_BIT(TCCR2B, CS21);
+    SET_BIT(TCCR2B, CS22);
+}
+static void timerCounter2Stop(void)
+{
+    //UNSET_BIT(TCCR2B, CS20);
+    UNSET_BIT(TCCR2B, CS21);
+    UNSET_BIT(TCCR2B, CS22);
+}
 
 static void initializePortB(void)
 {
     DDRB = 0;
     SET_BIT(DDRB, DDB1);
     SET_BIT(DDRB, DDB2);
+    SET_BIT(DDRB, DDB3);
     SET_BIT(DDRB, DDB5);
 }
 
 static void initializePortD(void)
 {
     DDRD = 0;
+    SET_BIT(DDRD, DDD3);
     SET_BIT(DDRD, DDD5);
     SET_BIT(DDRD, DDD6);
 }
@@ -145,13 +166,15 @@ static void initializeDevice16(device *device, volatile uint16_t *pitch, volatil
 
 static device* initializeDevices(uint8_t *numDevices)
 {
-    *numDevices = 2;
+    *numDevices = 3;
     device *devices = malloc((*numDevices) * sizeof(device));
 
     // timer counter 0
     initializeDevice8(&devices[0], &OCR0A, &OCR0B);
     // timer counter 1
     initializeDevice16(&devices[1], &OCR1A, &OCR1B);
+    // timer counter 2
+    initializeDevice8(&devices[2], &OCR2A, &OCR2B);
 
     return devices;
 }
@@ -173,10 +196,11 @@ static void initializeChannel(channel *channel, device *device)
 
 static channel* initializeChannels(uint8_t *numChannels, device *devices)
 {
-    *numChannels = 2;
+    *numChannels = 3;
     channel *channels = malloc((*numChannels) * sizeof(channel));
     initializeChannel(&channels[0], &devices[0]);
     initializeChannel(&channels[1], &devices[1]);
+    initializeChannel(&channels[2], &devices[2]);
     return channels;
 }
 
@@ -191,10 +215,11 @@ static void initializeTrack(track *track, channel *channel, uint8_t *sequence, u
 }
 static track* initializeTracks(uint8_t *numTracks, channel* channels)
 {
-    *numTracks = 2;
+    *numTracks = 3;
     track *tracks = malloc((*numTracks) * sizeof(track));
     initializeTrack(&tracks[0], &channels[0], sequenceBass, sequenceBassLength);
     initializeTrack(&tracks[1], &channels[1], sequenceTreble, sequenceTrebleLength);
+    initializeTrack(&tracks[2], &channels[2], sequenceBass, sequenceTrebleLength);
     return tracks;
 }
 
@@ -323,9 +348,11 @@ int main(void)
     initializeAnalogInput();
     initializeTimerCounter0();
     initializeTimerCounter1();
+    initializeTimerCounter2();
 
     timerCounter0Start();
     timerCounter1Start();
+    timerCounter2Start();
 
     // turn off built-in led - to use for debugging later
     BUILTIN_LED_OFF;
