@@ -204,7 +204,7 @@ static channel* initializeChannels(uint8_t *numChannels, device *devices)
     return channels;
 }
 
-static void initializeTrack(track *track, channel *channel, uint8_t *sequence, uint16_t sequenceLength)
+static void initializeTrack(track *track, channel *channel, const uint8_t *sequence, uint16_t sequenceLength)
 {
     track->channel = channel;
     track->sequence = sequence;
@@ -237,9 +237,9 @@ static void readTrack(track *target)
         return;
     }
 
-    uint16_t code = target->sequence[target->sPosition];
+    const uint8_t *tSequence = target->sequence;
     uint16_t position = target->sPosition;
-    uint8_t *tSequence = target->sequence;
+    uint16_t code = pgm_read_byte(&tSequence[position]);
     channel *tChannel = target->channel;
 
     switch (code) 
@@ -247,7 +247,7 @@ static void readTrack(track *target)
         case 0:
             // sleep for duration
             target->remainingSleepTime =
-                tSequence[position+1] * sleepUnit * rhythmUnit;
+                pgm_read_byte(&tSequence[position+1]) * sleepUnit * rhythmUnit;
             target->sPosition = position+2;
             break;
         case 1:
@@ -257,12 +257,12 @@ static void readTrack(track *target)
             // Set pitches
             // pitches + sleep combo to save space
             target->remainingSleepTime =
-                tSequence[position+code+1] * sleepUnit * rhythmUnit;
+                pgm_read_byte(&tSequence[position+code+1]) * sleepUnit * rhythmUnit;
             tChannel->currentPitchCount = code;
             target->sPosition = position + code + 2;
             for (int i = 0; i < code; i++)
             {
-                tChannel->currentPitches[i] = tSequence[position+i+1];
+                tChannel->currentPitches[i] = pgm_read_byte(&tSequence[position+i+1]);
             }
             tChannel->nextPitchIndex = 0;
             break;
@@ -273,33 +273,33 @@ static void readTrack(track *target)
             code -= 10;
             // Set pitches
             // pitches + sleep + volume combo to save space
-            target->channel->currentTone = tSequence[position+code+1];
+            target->channel->currentTone = pgm_read_byte(&tSequence[position+code+1]);
             target->remainingSleepTime =
-                tSequence[position+code+2] * sleepUnit * rhythmUnit;
+                pgm_read_byte(&tSequence[position+code+2]) * sleepUnit * rhythmUnit;
             target->sPosition = position + code + 3;
             tChannel->currentPitchCount = code;
             for (int i = 0; i < code; i++)
             {
-                tChannel->currentPitches[i] = tSequence[position+i+1];
+                tChannel->currentPitches[i] = pgm_read_byte(&tSequence[position+i+1]);
             }
             tChannel->nextPitchIndex = 0;
             break;
         case 5:
             // Set "volume" (voltage)
             tChannel->currentTone =
-                tSequence[position+1];
+                pgm_read_byte(&tSequence[position+1]);
             target->sPosition = position+2;
             break;
         case 6:
             // Set instrument function
             tChannel->instrument =
-                instruments[tSequence[position+1]];
+                instruments[pgm_read_byte(&tSequence[position+1])];
             target->sPosition = position+2;
             break;
         case 7:
             // Set rhythm unit (tempo)
             rhythmUnit =
-                tSequence[position+1];
+                pgm_read_byte(&tSequence[position+1]);
             target->sPosition = position+2;
             break;
         case 8:
@@ -312,15 +312,15 @@ static void readTrack(track *target)
             else
             {
                 target->jPosition = position;
-                target->sPosition = position-(tSequence[position+1]);
+                target->sPosition = position-(pgm_read_byte(&tSequence[position+1]));
             }
             break;
         case 9:
             // volume + sleep
             tChannel->currentTone =
-                tSequence[position+1];
+                pgm_read_byte(&tSequence[position+1]);
             target->remainingSleepTime =
-                tSequence[position+2] * sleepUnit * rhythmUnit;
+                pgm_read_byte(&tSequence[position+2]) * sleepUnit * rhythmUnit;
             target->sPosition = position+3;
             break;
         default:
@@ -335,7 +335,7 @@ static void readTrack(track *target)
     }
 }
 
-void readTracks(uint8_t numTracks, track *tracks)
+static void readTracks(const uint8_t numTracks, track *tracks)
 {
     // check if it's time to loop
     // and manually resync tracks
@@ -362,7 +362,7 @@ void readTracks(uint8_t numTracks, track *tracks)
     }
 }
 
-void playChannels(uint8_t numChannels, channel *channels, state *state)
+static void playChannels(const uint8_t numChannels, channel *channels, state *state)
 {
     for (int i = 0; i < numChannels; i++)
     {

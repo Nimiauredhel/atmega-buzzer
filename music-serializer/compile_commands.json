@@ -1,0 +1,14 @@
+[
+  {
+    "arguments": [
+      "/usr/bin/gcc",
+      "-c",
+      "-o",
+      "program",
+      "program.c"
+    ],
+    "directory": "/home/mickey/Repos/atmega-buzzer/music-serializer",
+    "file": "/home/mickey/Repos/atmega-buzzer/music-serializer/program.c",
+    "output": "/home/mickey/Repos/atmega-buzzer/music-serializer/program"
+  }
+]

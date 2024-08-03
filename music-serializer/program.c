@@ -20,12 +20,12 @@ int main(int argc, char** argv)
     fread(newCharArr, sizeof(voiceOne[0]), voiceOneLength, inFile); 
     printf("Number of elements read: %zu\n", read);
 
-    printf("Read file elements:\n");
+ /*   printf("Read file elements:\n");
 
     for (int i = 0; i < voiceOneLength; i++)
     {
         printf("%u\n", newCharArr[i]);
-    }
+    }*/
 
     printf("Program finished. Thank you.\n");
 
