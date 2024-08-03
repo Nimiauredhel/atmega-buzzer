@@ -26,7 +26,7 @@ static void instRegular(channel *channel, state *state)
         channel->nextPitchIndex = 0;
     }
 
-    uint8_t finalTone = (channel->currentTone*state->volume)/1023;
+    uint8_t finalTone = ((channel->currentTone)*(state->volume))/1024;
     VSP_Write(finalTone, &channel->device->width);
     VSP_Write(channel->currentPitches[channel->nextPitchIndex], 
             &channel->device->pitch);
@@ -137,7 +137,7 @@ static void initializeAnalogInput(void)
     ADCSRA |= (1 << ADEN) | (1 << ADPS0) | (1 << ADPS1) | (1 << ADPS2);
 }
 
-static uint8_t readAnalogInput()
+static uint16_t readAnalogInput()
 {
     SET_BIT(ADCSRA, ADSC);
 
@@ -217,9 +217,9 @@ static track* initializeTracks(uint8_t *numTracks, channel* channels)
 {
     *numTracks = 3;
     track *tracks = malloc((*numTracks) * sizeof(track));
-    initializeTrack(&tracks[0], &channels[0], sequenceBass, sequenceBassLength);
-    initializeTrack(&tracks[1], &channels[1], sequenceTreble, sequenceTrebleLength);
-    initializeTrack(&tracks[2], &channels[2], sequenceBass, sequenceTrebleLength);
+    initializeTrack(&tracks[0], &channels[0], voiceOne, voiceOneLength);
+    initializeTrack(&tracks[1], &channels[1], voiceTwo, voiceTwoLength);
+    initializeTrack(&tracks[2], &channels[2], voiceThree, voiceThreeLength);
     return tracks;
 }
 
@@ -228,6 +228,12 @@ static void readTrack(track *target)
     if (target->remainingSleepTime > 0)
     {
         target->remainingSleepTime-=sleepUnit;
+        return;
+    }
+    
+    if (target->sPosition >= target->sLength - 1)
+    {
+        target->remainingSleepTime = 0;
         return;
     }
 
@@ -260,8 +266,26 @@ static void readTrack(track *target)
             }
             tChannel->nextPitchIndex = 0;
             break;
+        case 11:
+        case 12:
+        case 13:
+        case 14:
+            code -= 10;
+            // Set pitches
+            // pitches + sleep + volume combo to save space
+            target->channel->currentTone = tSequence[position+code+1];
+            target->remainingSleepTime =
+                tSequence[position+code+2] * sleepUnit * rhythmUnit;
+            target->sPosition = position + code + 3;
+            tChannel->currentPitchCount = code;
+            for (int i = 0; i < code; i++)
+            {
+                tChannel->currentPitches[i] = tSequence[position+i+1];
+            }
+            tChannel->nextPitchIndex = 0;
+            break;
         case 5:
-            // Set "tone" (voltage)
+            // Set "volume" (voltage)
             tChannel->currentTone =
                 tSequence[position+1];
             target->sPosition = position+2;
@@ -291,6 +315,14 @@ static void readTrack(track *target)
                 target->sPosition = position-(tSequence[position+1]);
             }
             break;
+        case 9:
+            // volume + sleep
+            tChannel->currentTone =
+                tSequence[position+1];
+            target->remainingSleepTime =
+                tSequence[position+2] * sleepUnit * rhythmUnit;
+            target->sPosition = position+3;
+            break;
         default:
             /*for (int i = 0; i < code; i++)
             {
@@ -310,7 +342,7 @@ void readTracks(uint8_t numTracks, track *tracks)
     for (int i = 0; i < numTracks; i++)
     {
         if (tracks[i].sPosition >= tracks[i].sLength-1
-            && tracks[i].remainingSleepTime >= 0)
+            && tracks[i].remainingSleepTime <= 0)
         {
             // if true for ONE, sync ALL then continue!
             for(int j = 0; j < numTracks; j++)
@@ -353,9 +385,6 @@ int main(void)
     timerCounter0Start();
     timerCounter1Start();
     timerCounter2Start();
-
-    // turn off built-in led - to use for debugging later
-    BUILTIN_LED_OFF;
 
     // initialize the devices - interfaces to audio emitting hardware
     composition->devices = initializeDevices(&composition->numDevices);
