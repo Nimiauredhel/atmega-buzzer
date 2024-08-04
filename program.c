@@ -217,9 +217,9 @@ static track* initializeTracks(uint8_t *numTracks, channel* channels)
 {
     *numTracks = 3;
     track *tracks = malloc((*numTracks) * sizeof(track));
-    initializeTrack(&tracks[0], &channels[0], voiceOne, pgm_read_word(voiceOneLength));
-    initializeTrack(&tracks[1], &channels[1], voiceTwo, pgm_read_word(voiceTwoLength));
-    initializeTrack(&tracks[2], &channels[2], voiceThree, pgm_read_word(voiceThreeLength));
+    initializeTrack(&tracks[0], &channels[0], voiceOne, pgm_read_word(&voiceOneLength));
+    initializeTrack(&tracks[1], &channels[1], voiceTwo, pgm_read_word(&voiceTwoLength));
+    initializeTrack(&tracks[2], &channels[2], voiceThree, pgm_read_word(&voiceThreeLength));
     return tracks;
 }
 
@@ -237,9 +237,9 @@ static void readTrack(track *target)
         return;
     }
 
-    const char *tSequence = target->sequence;
+    const uint8_t *tSequence = target->sequence;
     uint16_t position = target->sPosition;
-    char code = pgm_read_byte(&tSequence[position]);
+    uint8_t code = pgm_read_byte(&tSequence[position]);
     channel *tChannel = target->channel;
 
     switch (code) 
