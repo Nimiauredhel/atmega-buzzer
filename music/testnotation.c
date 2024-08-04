@@ -1,6 +1,6 @@
 #include <avr/io.h>
-#include "notationdefines.c"
-#include "../notes.c"
+#include "notationdefines.h"
+#include "../notes.h"
 
 uint8_t voiceOne[] =
 {

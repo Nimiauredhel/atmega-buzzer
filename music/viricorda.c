@@ -1,9 +1,6 @@
-#include <avr/io.h>
-#include <avr/pgmspace.h>
-#include "notationdefines.c"
-#include "../notes.c"
+#include "musicdata.h"
 
-const uint8_t PROGMEM voiceOne[] =
+const PROGMEM uint8_t voiceOne[] =
 {
     INSTRUMENT(SQUARE)
     TEMPO(56)
@@ -133,7 +130,10 @@ const uint8_t PROGMEM voiceOne[] =
     NOTE(G3, 32, 12) SILENCE(4)
     JUMPBACK(7)
 };
-const uint8_t PROGMEM voiceTwo[] =
+const PROGMEM uint16_t voiceOneLength =
+sizeof(voiceOne)/sizeof(voiceOne[0]);
+
+const PROGMEM uint8_t voiceTwo[] =
 {
     INSTRUMENT(SQUARE)
     NOTE(B3, 24, 4) SILENCE(4)
@@ -261,7 +261,10 @@ const uint8_t PROGMEM voiceTwo[] =
     NOTE(G4, 32, 12) SILENCE(4)
     JUMPBACK(7)
 };
-const uint8_t PROGMEM voiceThree[] =
+const PROGMEM uint16_t voiceTwoLength =
+sizeof(voiceTwo)/sizeof(voiceTwo[0]);
+
+const PROGMEM uint8_t voiceThree[] =
 {
     INSTRUMENT(SQUARE)
     NOTE(B3, 24, 4) SILENCE(4)
@@ -389,6 +392,5 @@ const uint8_t PROGMEM voiceThree[] =
     NOTE(G4, 32, 12) SILENCE(4)
     JUMPBACK(7)
 };
-const uint16_t voiceOneLength = sizeof(voiceOne) / sizeof(voiceOne[0]);
-const uint16_t voiceTwoLength = sizeof(voiceTwo) / sizeof(voiceTwo[0]);
-const uint16_t voiceThreeLength = sizeof(voiceThree) / sizeof(voiceThree[0]);
+const PROGMEM uint16_t voiceThreeLength =
+sizeof(voiceThree)/sizeof(voiceThree[0]);

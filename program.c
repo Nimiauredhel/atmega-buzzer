@@ -1,12 +1,10 @@
-#include <avr/io.h>
-#include <util/delay.h>
 #include <stdlib.h>
+#include <util/delay.h>
+#include <avr/io.h>
+#include <avr/pgmspace.h>
+#include "program.h"
 #include "common.c"
-#include "notes.c"
-//#include "music/bach.c"
-//#include "music/lostelf.c"
-//#include "music/testnotation.c"
-#include "music/viricorda.c"
+#include "music/musicdata.c"
 
 static uint64_t sleepUnit = 512;
 static uint8_t rhythmUnit = 255; // also set dynamically by tracks
@@ -53,19 +51,19 @@ const instrument instruments[] =
 };
 
 // timer counter 0
-static  void initializeTimerCounter0(void)
+static void initializeTimerCounter0(void)
 {
     TCCR0A = (1 << COM0A1) | (1 << COM0B1) | (1 << WGM00);
     TCCR0B = (1 << WGM02); 
 }
-static void timerCounter0Start(void)
+static void startTimerCounter0(void)
 {
     // 1 0 0 - clk/256
     //SET_BIT(TCCR0B, CS00);
     //SET_BIT(TCCR0B, CS01);
     SET_BIT(TCCR0B, CS02);
 }
-static void timerCounter0Stop(void)
+static void stopTimerCounter0(void)
 {
     //UNSET_BIT(TCCR0B, CS00);
     //UNSET_BIT(TCCR0B, CS01);
@@ -77,14 +75,14 @@ static  void initializeTimerCounter1(void)
     TCCR1A = (1 << COM1A1) | (1 << COM1B1) | (1 << WGM10);
     TCCR1B = (1 << WGM13); 
 }
-static void timerCounter1Start(void)
+static void startTimerCounter1(void)
 {
     // 1 0 0 - clk/256
     //SET_BIT(TCCR1B, CS10);
     //SET_BIT(TCCR1B, CS11);
     SET_BIT(TCCR1B, CS12);
 }
-static void timerCounter1Stop(void)
+static void stopTimerCounter1(void)
 {
     //UNSET_BIT(TCCR1B, CS10);
     //UNSET_BIT(TCCR1B, CS11);
@@ -96,14 +94,14 @@ static void initializeTimerCounter2(void)
     TCCR2A = (1 << COM2A1) | (1 << COM2B1) | (1 << WGM20);
     TCCR2B = (1 << WGM22); 
 }
-static void timerCounter2Start(void)
+static void startTimerCounter2(void)
 {
     // 1 0 0 - clk/256
     //SET_BIT(TCCR2B, CS20);
     SET_BIT(TCCR2B, CS21);
     SET_BIT(TCCR2B, CS22);
 }
-static void timerCounter2Stop(void)
+static void stopTimerCounter2(void)
 {
     //UNSET_BIT(TCCR2B, CS20);
     UNSET_BIT(TCCR2B, CS21);
@@ -198,9 +196,11 @@ static channel* initializeChannels(uint8_t *numChannels, device *devices)
 {
     *numChannels = 3;
     channel *channels = malloc((*numChannels) * sizeof(channel));
-    initializeChannel(&channels[0], &devices[0]);
-    initializeChannel(&channels[1], &devices[1]);
-    initializeChannel(&channels[2], &devices[2]);
+
+    for (int i = 0; i < *numChannels; i++)
+    {
+        initializeChannel(&channels[i], &devices[i]);
+    }
     return channels;
 }
 
@@ -217,9 +217,9 @@ static track* initializeTracks(uint8_t *numTracks, channel* channels)
 {
     *numTracks = 3;
     track *tracks = malloc((*numTracks) * sizeof(track));
-    initializeTrack(&tracks[0], &channels[0], voiceOne, voiceOneLength);
-    initializeTrack(&tracks[1], &channels[1], voiceTwo, voiceTwoLength);
-    initializeTrack(&tracks[2], &channels[2], voiceThree, voiceThreeLength);
+    initializeTrack(&tracks[0], &channels[0], voiceOne, pgm_read_word(voiceOneLength));
+    initializeTrack(&tracks[1], &channels[1], voiceTwo, pgm_read_word(voiceTwoLength));
+    initializeTrack(&tracks[2], &channels[2], voiceThree, pgm_read_word(voiceThreeLength));
     return tracks;
 }
 
@@ -237,9 +237,9 @@ static void readTrack(track *target)
         return;
     }
 
-    const uint8_t *tSequence = target->sequence;
+    const char *tSequence = target->sequence;
     uint16_t position = target->sPosition;
-    uint16_t code = pgm_read_byte(&tSequence[position]);
+    char code = pgm_read_byte(&tSequence[position]);
     channel *tChannel = target->channel;
 
     switch (code) 
@@ -382,9 +382,9 @@ int main(void)
     initializeTimerCounter1();
     initializeTimerCounter2();
 
-    timerCounter0Start();
-    timerCounter1Start();
-    timerCounter2Start();
+    startTimerCounter0();
+    startTimerCounter1();
+    startTimerCounter2();
 
     // initialize the devices - interfaces to audio emitting hardware
     composition->devices = initializeDevices(&composition->numDevices);
