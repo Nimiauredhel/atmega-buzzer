@@ -1,5 +1,4 @@
 default:
-	sudo avrdude 
 	avr-gcc -Os -DF_CPU=16000000UL -mmcu=atmega328p -c -o program.o program.c
 	avr-gcc -mmcu=atmega328p -o program.bin program.o
 	avr-objcopy -O ihex -R .eeprom program.bin program.hex
