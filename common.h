@@ -63,8 +63,17 @@ typedef struct track
     uint16_t sPosition;
     // the last position from which a jump was triggered
     uint16_t jPosition;
+    // a counter for how many times a jump has been repeated
+    uint8_t repeatCounter;
     // remaining track sleep time in microseconds
     uint64_t remainingSleepTime;
+    // the current position of the interpretation subtrack
+    uint8_t iPosition;
+    // the current length of the interpretation subtrack
+    uint8_t iLength;
+    // a pre-allocated command subtrack for runtime "interpretation",
+    // to allow complex timing commands while multi-tasking
+    uint16_t iTrack[255];
 } track;
 
 typedef struct composition

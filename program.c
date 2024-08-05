@@ -1,4 +1,5 @@
 #include <stdlib.h>
+#include <string.h>
 #include <util/delay.h>
 #include <avr/io.h>
 #include <avr/pgmspace.h>
@@ -212,6 +213,10 @@ static void initializeTrack(track *track, channel *channel, sequence_t *sequence
     track->sPosition = 0;
     track->remainingSleepTime = 0;
     track->jPosition = 0;
+    track->repeatCounter = 0;
+    track->iPosition = 0;
+    track->iLength = 0;
+    memset(track->iTrack, 0, sizeof(track->iTrack));
 }
 static track* initializeTracks(uint8_t *numTracks, channel* channels)
 {
