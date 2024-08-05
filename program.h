@@ -30,7 +30,7 @@ static void initializeDevice16(device *device, volatile uint16_t *pitch, volatil
 static device* initializeDevices(uint8_t *numDevices);
 static void initializeChannel(channel *channel, device *device);
 static channel* initializeChannels(uint8_t *numChannels, device *devices);
-static void initializeTrack(track *track, channel *channel, const uint8_t *sequence, uint16_t sequenceLength);
+static void initializeTrack(track *track, channel *channel, sequence_t *sequence, uint16_t sequenceLength);
 static track* initializeTracks(uint8_t *numTracks, channel* channels);
 static void readTrack(track *target);
 static void readTracks(const uint8_t numTracks, track *tracks);

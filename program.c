@@ -204,7 +204,7 @@ static channel* initializeChannels(uint8_t *numChannels, device *devices)
     return channels;
 }
 
-static void initializeTrack(track *track, channel *channel, const uint8_t *sequence, uint16_t sequenceLength)
+static void initializeTrack(track *track, channel *channel, sequence_t *sequence, uint16_t sequenceLength)
 {
     track->channel = channel;
     track->sequence = sequence;
@@ -237,7 +237,7 @@ static void readTrack(track *target)
         return;
     }
 
-    const uint8_t *tSequence = target->sequence;
+    sequence_t *tSequence = target->sequence;
     uint16_t position = target->sPosition;
     uint8_t code = pgm_read_byte(&tSequence[position]);
     channel *tChannel = target->channel;
@@ -262,7 +262,7 @@ static void readTrack(track *target)
             target->sPosition = position + code + 2;
             for (int i = 0; i < code; i++)
             {
-                tChannel->currentPitches[i] = pgm_read_byte(&tSequence[position+i+1]);
+                tChannel->currentPitches[i] = pgm_read_word(&tSequence[position+i+1]);
             }
             tChannel->nextPitchIndex = 0;
             break;
@@ -280,7 +280,7 @@ static void readTrack(track *target)
             tChannel->currentPitchCount = code;
             for (int i = 0; i < code; i++)
             {
-                tChannel->currentPitches[i] = pgm_read_byte(&tSequence[position+i+1]);
+                tChannel->currentPitches[i] = pgm_read_word(&tSequence[position+i+1]);
             }
             tChannel->nextPitchIndex = 0;
             break;

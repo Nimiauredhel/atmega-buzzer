@@ -10,6 +10,8 @@
 #define BUILTIN_LED_ON SET_BIT(PORTB, 5)
 #define BUILTIN_LED_OFF UNSET_BIT(PORTB, 5)
 
+typedef const PROGMEM uint16_t sequence_t;
+
 typedef struct variableSizePointer
 {
     uint8_t pointerSize;
@@ -38,7 +40,7 @@ typedef struct channel
     // the number of pitches represented by this channel
     uint8_t currentPitchCount;
     // array of pitches represented by this channel
-    uint8_t currentPitches[4];
+    uint16_t currentPitches[4];
     // index of next pitch to sound on this channel
     uint8_t nextPitchIndex;
     // current "tone" (voltage?) set on this channel
@@ -54,7 +56,7 @@ typedef struct track
     // target channel associated with this track
     channel *channel;
     // the sequence of commands associated with this track
-    const uint8_t *sequence;
+    const sequence_t *sequence;
     // the length of the command sequence
     uint16_t sLength;
     // the current position of the command sequence
